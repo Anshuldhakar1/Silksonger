@@ -1,6 +1,6 @@
 # Compiled class file
 *.class
-
+./.trackerdata/
 # Log file
 *.log
 
