@@ -1,0 +1,86 @@
+{
+    "C:/Users/anshu/AppData/LocalLow/Team Cherry/Hollow Knight Silksong/1156132065/user4.dat": [
+        {
+            "change_data": {
+                "filepath": "C:/Users/anshu/AppData/LocalLow/Team Cherry/Hollow Knight Silksong/1156132065/user4.dat",
+                "timestamp": "2025-11-07 02:50:52",
+                "diff": [
+                    [
+                        "change",
+                        "playerData.playTime",
+                        [
+                            386.0303,
+                            405.863434
+                        ]
+                    ],
+                    [
+                        "change",
+                        "playerData.mapperAway",
+                        [
+                            false,
+                            true
+                        ]
+                    ],
+                    [
+                        "change",
+                        "playerData.pilgrimRestCrowd",
+                        [
+                            5,
+                            1
+                        ]
+                    ],
+                    [
+                        "change",
+                        "playerData.pilgrimGroupBonegrave",
+                        [
+                            2,
+                            3
+                        ]
+                    ],
+                    [
+                        "change",
+                        "playerData.pilgrimGroupShellgrave",
+                        [
+                            2,
+                            1
+                        ]
+                    ],
+                    [
+                        "change",
+                        "playerData.pilgrimGroupGreymoorField",
+                        [
+                            3,
+                            2
+                        ]
+                    ],
+                    [
+                        "change",
+                        "playerData.enemyGroupAnt04",
+                        [
+                            1,
+                            2
+                        ]
+                    ],
+                    [
+                        "change",
+                        "playerData.halfwayCrowEnemyGroup",
+                        [
+                            2,
+                            3
+                        ]
+                    ],
+                    [
+                        "change",
+                        "playerData.FisherWalkerIdleTimeLeft",
+                        [
+                            30.71139,
+                            10.8783245
+                        ]
+                    ]
+                ]
+            },
+            "note": "Add a notedsfsdfsd about this change...",
+            "timestamp": 1762464069.0988176
+        }
+    ]
+}
