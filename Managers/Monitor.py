@@ -39,6 +39,7 @@ class Monitor:
         self.target_file = None
         self.monitor_thread: Optional[MonitorThread] = None
         self.previous_data = None
+        self._is_shutting_down = False
 
     def set_target(self, filepath: str):
         self.target_file = filepath
@@ -65,12 +66,21 @@ class Monitor:
         self.root.W_dashboard.main_log(f"Started monitoring {os.path.basename(self.target_file)}", "START")
         self.root.W_dashboard.main_log("Waiting for changes...", "INFO")
 
+    def cleanup(self):
+        """Clean up resources when application is closing"""
+        self._is_shutting_down = True
+        self.stop_monitoring()
+        if self.monitor_thread and self.monitor_thread.is_alive():
+            self.monitor_thread.running = False
+            self.monitor_thread.join(timeout=1.0)  # Wait up to 1 second for thread to finish
+
     def stop_monitoring(self):
+        if not self._is_shutting_down:
+            self.root.W_dashboard.main_log("Monitoring stopped", "STOP")
         if self.monitor_thread and self.monitor_thread.is_alive():
             self.monitor_thread.stop()
             self.monitor_thread.join()
             self.monitor_thread = None
-            self.root.W_dashboard.main_log("Monitoring stopped", "STOP")
         self.is_monitoring = False
 
     def _handle_file_access(self, file_handle):

@@ -81,11 +81,28 @@ class AppManager(ctk.CTk):
         self.title("File Monitor")
         self.geometry("920x560")
 
+        # Setup managers and UI
         self.M_fileHandler = FileHandler()
         self.init_data()
-
         self.M_monitor = Monitor(self)
         self.W_dashboard = Dashboard(self)
+
+        # Register window close handler
+        self.protocol("WM_DELETE_WINDOW", self._on_closing)
+
+    def _on_closing(self):
+        """Handles application shutdown"""
+        # Log shutdown
+        if self.W_dashboard:
+            self.W_dashboard.main_log("Application shutting down...", "INFO")
+        
+        # Cleanup background tasks
+        if self.M_monitor:
+            self.M_monitor.cleanup()
+        
+        # Close window
+        self.quit()
+        self.destroy()
 
     def show_notification(self):
         if self.notification_window is None or not self.notification_window.winfo_exists():
