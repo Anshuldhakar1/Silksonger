@@ -5,6 +5,7 @@ import os
 from PIL import Image
 
 from AppWindows.Dashboard import Dashboard
+from AppWindows.NotificationWindow import NotificationWindow
 from Managers.JsonManager import JsonManager
 from Managers.FileHandler import FileHandler
 from Managers.Monitor import Monitor
@@ -17,6 +18,7 @@ class AppManager(ctk.CTk):
         self.M_fileHandler = None
         self.M_monitor = None
         self.W_dashboard = None
+        self.notification_window = None
 
         self.important_changes = {} 
         self.saved_notes = {}
@@ -84,3 +86,7 @@ class AppManager(ctk.CTk):
 
         self.M_monitor = Monitor(self)
         self.W_dashboard = Dashboard(self)
+
+    def show_notification(self):
+        if self.notification_window is None or not self.notification_window.winfo_exists():
+            self.notification_window = NotificationWindow(self)

@@ -102,6 +102,7 @@ class Monitor:
                 #     elif operation == "remove":
                 #         self.root.W_dashboard.main_log(f"  Removed {path}: {change[2]}", "INFO")
                 
+                self.root.show_notification()  # Add this line to show notification
                 self.previous_data = current_data
 
         except Exception as e:
