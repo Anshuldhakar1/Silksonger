@@ -17,7 +17,7 @@ class Dashboard():
         self.root.fileHandler.set_callback(self.on_file_selected)
         self.dropdown_frame = None
 
-        self.log_message("Application started")
+        self.main_log("Application started")
 
     def get_filename(self, filepath):
         return os.path.basename(filepath)
@@ -264,7 +264,7 @@ class Dashboard():
     def release_file(self):
         pass
 
-    def log_message(self, message: str, tag: str = None):
+    def main_log(self, message: str, tag: str = None):
         """Helper function to add a message to the main output textbox."""
         self.output_textbox.configure(state="normal")
         
