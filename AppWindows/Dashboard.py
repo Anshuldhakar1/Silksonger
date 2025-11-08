@@ -14,10 +14,17 @@ class Dashboard():
         self._gui_createSideBar()
         self._gui_createMain()
 
-        self.root.fileHandler.set_callback(self.on_file_selected)
+        self.root.M_fileHandler.set_callback(self.on_file_selected)
         self.dropdown_frame = None
 
         self.main_log("Application started")
+
+    #  self.output_textbox._textbox.tag_configure("timestamp", foreground="gray")
+    # self.output_textbox._textbox.tag_configure("START", foreground="#059669", font=("Consolas", 13, "bold")) # Green
+    # self.output_textbox._textbox.tag_configure("STOP", foreground="#DC2626", font=("Consolas", 13, "bold")) # Red
+    # self.output_textbox._textbox.tag_configure("MODIFY", foreground="#D97706", font=("Consolas", 13, "bold")) # Amber
+    # self.output_textbox._textbox.tag_configure("INFO", foreground="gray")
+    # self.output_textbox._textbox.tag_configure("ERROR", foreground="red")
 
     def get_filename(self, filepath):
         return os.path.basename(filepath)
@@ -25,7 +32,34 @@ class Dashboard():
     def on_file_selected(self, filepath):
         self.file_entry.delete(0, "end")
         self.file_entry.insert(0, self.get_filename(filepath))
-        self.full_filepath = filepath  # Store the full path for later use
+        self.full_filepath = filepath  
+        self.root.M_monitor.set_target(filepath)
+
+        self.main_log(f"Selected File {self.get_filename(filepath)}", "MODIFY")
+
+        self.enable_monitor_btn(True)
+        self.enable_stop_btn(True)
+        
+    def toggle_monitoring(self):
+        if self.root.M_monitor.is_target_set:
+            self.enable_monitor_btn(True)
+        else:
+            self.main_log("No File Selected!!", "ERROR")
+
+        # implement logic for monirtoring activation
+
+    def release_file(self):
+        if self.root.M_monitor.is_target_set:
+            self.root.M_monitor.release_target()
+            self.enable_monitor_btn(False)
+            self.enable_stop_btn(False)
+
+            self.main_log(f"Released File {self.get_filename(self.full_filepath)}", "MODIFY")
+
+            self.file_entry.delete(0, "end")
+            self.file_entry.configure(placeholder_text="C:\\...\\save.dat")
+        else:
+            self.main_log("No File Selected!!", "ERROR")
 
     def _gui_createSideBar(self):
         self.sidebar_frame = ctk.CTkFrame(self.root, width=300, corner_radius=0, fg_color="white")
@@ -87,7 +121,7 @@ class Dashboard():
                                          hover_color="#de0707",
                                          width=24,
                                          font=ctk.CTkFont(family="Helvetica", size=13),
-                                         command=self.root.fileHandler.browse)
+                                         command=self.root.M_fileHandler.browse)
         
         self.browse_button.grid(row=0, column=2, sticky="w", padx=5)
 
@@ -125,16 +159,20 @@ class Dashboard():
         controls_frame.grid(row=0, column=3, sticky="e", padx=20, pady=15)
         
         # Update start button (now a toggle)
-        self.start_button = ctk.CTkButton(controls_frame, 
+        self.monitor_toggle_button = ctk.CTkButton(controls_frame, 
                                        text="",
                                        image=self.root.play_icon,
                                        width=32,
                                        height=32,
+                                    #    state="disabled",
                                        font=ctk.CTkFont(size=14, weight="bold"),
-                                       fg_color="#dedede", 
-                                       hover_color="#dedede",
+                                       fg_color="#b3b3b3", 
+                                       hover_color="#b3b3b3",
+                                       border_width=1,
+                                       border_color="#c4c4c4",
                                        command=self.toggle_monitoring)
-        self.start_button.grid(row=0, column=0, sticky="e", padx=5)
+        self.monitor_toggle_button.grid(row=0, column=0, sticky="e", padx=5)
+        # self.monitor_toggle_button.configure
         
         # Update stop button text and colors to indicate it's for releasing the file
         self.stop_button = ctk.CTkButton(controls_frame, 
@@ -143,10 +181,11 @@ class Dashboard():
                                       width=32,
                                       height=32,
                                       font=ctk.CTkFont(size=14, weight="bold"),
-                                      fg_color="#EF4444",
+                                      fg_color="#DC2626",
                                       hover_color="#DC2626",
                                       command=self.release_file,
-                                      state="disabled")
+                                      state="disabled",
+                                      )
         self.stop_button.grid(row=0, column=1, sticky="e", padx=5)
 
         # Main log area with slightly off-white background
@@ -173,7 +212,7 @@ class Dashboard():
             self.close_dropdown()
             return 
             
-        recent_files = self.root.fileHandler.get_recent_files()
+        recent_files = self.root.M_fileHandler.get_recent_files()
         if not recent_files:
             return
         
@@ -212,9 +251,9 @@ class Dashboard():
 
     def select_recent_file(self, filepath):
         self.on_file_selected(filepath)
-        
+
     def open_last_file(self):
-        recent_files = self.root.fileHandler.get_recent_files()
+        recent_files = self.root.M_fileHandler.get_recent_files()
         if not recent_files:
             return
 
@@ -258,12 +297,6 @@ class Dashboard():
             master = getattr(master, 'master', None)
         self.close_dropdown()
 
-    def toggle_monitoring(self):
-        pass
-
-    def release_file(self):
-        pass
-
     def main_log(self, message: str, tag: str = None):
         """Helper function to add a message to the main output textbox."""
         self.output_textbox.configure(state="normal")
@@ -277,3 +310,29 @@ class Dashboard():
         self.output_textbox.insert("end", f"{message}\n")
         self.output_textbox.see("end")
         self.output_textbox.configure(state="disabled")
+
+    def enable_monitor_btn(self, state: bool):
+        if state:
+            self.monitor_toggle_button.configure(
+                state="normal",
+                fg_color="#dedede",      
+                hover_color="#d1d1d1"    
+            )
+        else:
+            self.monitor_toggle_button.configure(
+                state="disabled",
+                fg_color="#bdbdbd",      
+                hover_color="#bdbdbd"    
+            )
+
+    def enable_stop_btn(self, state: bool):
+        if state:
+            self.stop_button.configure(
+                state="normal",
+                fg_color="#EF4444",      
+            )
+        else:
+            self.stop_button.configure(
+                state="disabled",
+                fg_color="#DC2626",      
+            )

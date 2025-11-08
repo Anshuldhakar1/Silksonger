@@ -5,18 +5,21 @@ from PIL import Image
 from AppWindows.Dashboard import Dashboard
 from Managers.JsonManager import JsonManager
 from Managers.FileHandler import FileHandler
+from Managers.Monitor import Monitor
 
 class AppManager(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.console_logging = False
 
-        self.fileHandler = FileHandler()
+        self.M_fileHandler = None
+        self.M_monitor = None
+        self.W_dashboard = None
 
         self.important_changes = {} 
         self.saved_notes = {}
 
         self.init_icons()
-        self.init_data()
         self.init_window()
 
     def init_icons(self):
@@ -59,13 +62,13 @@ class AppManager(ctk.CTk):
 
     def init_data(self):
         try:
-            os.makedirs(self.fileHandler.data_dir, exist_ok=True)
+            os.makedirs(self.M_fileHandler.data_dir, exist_ok=True)
             
-            if os.path.exists(self.fileHandler.imp_path):
-                self.important_changes = JsonManager.load_json(self.fileHandler.imp_path)
+            if os.path.exists(self.M_fileHandler.imp_path):
+                self.important_changes = JsonManager.load_json(self.M_fileHandler.imp_path)
 
-            if os.path.exists(self.fileHandler.saved_notes_path):
-                self.saved_notes = JsonManager.load_json(self.fileHandler.saved_notes_path)
+            if os.path.exists(self.M_fileHandler.saved_notes_path):
+                self.saved_notes = JsonManager.load_json(self.M_fileHandler.saved_notes_path)
                     
         except Exception as e:
             print(f"Error initializing data storage: {e}")
@@ -75,4 +78,8 @@ class AppManager(ctk.CTk):
         self.title("File Monitor")
         self.geometry("920x560")
 
-        self.dashboard_window = Dashboard(self)
+        self.M_fileHandler = FileHandler()
+        self.init_data()
+
+        self.M_monitor = Monitor()
+        self.W_dashboard = Dashboard(self)
