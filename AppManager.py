@@ -1,3 +1,5 @@
+from datetime import time
+import json
 import customtkinter as ctk
 import os
 from PIL import Image
@@ -74,12 +76,11 @@ class AppManager(ctk.CTk):
             print(f"Error initializing data storage: {e}")
 
     def init_window(self):
-
         self.title("File Monitor")
         self.geometry("920x560")
 
         self.M_fileHandler = FileHandler()
         self.init_data()
 
-        self.M_monitor = Monitor()
+        self.M_monitor = Monitor(self)
         self.W_dashboard = Dashboard(self)

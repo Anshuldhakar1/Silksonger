@@ -1,6 +1,9 @@
 import os
+import time
+import json
 from tkinter import filedialog
 from Managers.JsonManager import JsonManager
+from Managers.SaveDecoder import decrypt_hollow_knight_save
 
 class FileHandler():
     def __init__(self):
@@ -58,3 +61,33 @@ class FileHandler():
         except Exception as e:
             print(f"Error loading recent files: {e}")
             return []
+
+    def read_file_content(self, filepath: str) -> dict:
+        max_retries = 5
+        retry_delay = 0.2
+
+        for attempt in range(max_retries):
+            try:
+                with open(filepath, 'rb') as f:
+                    encrypted_data = f.read()
+
+                if not encrypted_data:
+                    if self.file_selected_callback:
+                        self.file_selected_callback.root.W_dashboard.main_log(f"File is empty, retrying... ({attempt+1}/{max_retries})", "ERROR")
+                    time.sleep(retry_delay)
+                    continue
+
+                decrypted_json = decrypt_hollow_knight_save(encrypted_data)
+                return json.loads(decrypted_json)
+
+            except (PermissionError, OSError):
+                # File is locked, retry after delay
+                time.sleep(retry_delay)
+            except Exception as e:
+                if self.file_selected_callback:
+                    self.file_selected_callback.root.W_dashboard.main_log(f"Error reading file: {e}", "ERROR")
+                time.sleep(retry_delay)
+        
+        if self.file_selected_callback:
+            self.file_selected_callback.root.W_dashboard.main_log("Failed to read file after multiple retries", "ERROR")
+        return {}

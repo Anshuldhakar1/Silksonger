@@ -40,9 +40,16 @@ class Dashboard():
         self.enable_monitor_btn(True)
         self.enable_stop_btn(True)
         
-    def toggle_monitoring(self):
+    def toggle_monitoring(self):  # means that the user pressed the play/pause btn
         if self.root.M_monitor.is_target_set:
-            self.enable_monitor_btn(True)
+            if not self.root.M_monitor.is_monitoring:
+                self.status_indicator_label.configure(text="\u25cf Monitoring Active", text_color="#059669")
+                self.root.M_monitor.start_monitoring()
+                # self.main_log(f"Started to monitor {self.get_filename(self.full_filepath)}", "START")
+            else:
+                self.status_indicator_label.configure(text="\u25cf Not Monitoring", text_color="#DC2626")
+                self.main_log(f"Stopped monitoring {self.get_filename(self.full_filepath)}", "STOP")
+                self.root.M_monitor.stop_monitoring()
         else:
             self.main_log("No File Selected!!", "ERROR")
 
@@ -50,7 +57,10 @@ class Dashboard():
 
     def release_file(self):
         if self.root.M_monitor.is_target_set:
+            if self.root.M_monitor.is_monitoring:
+                self.toggle_monitoring()
             self.root.M_monitor.release_target()
+
             self.enable_monitor_btn(False)
             self.enable_stop_btn(False)
 
