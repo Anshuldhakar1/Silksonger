@@ -73,6 +73,6 @@ class AppManager(ctk.CTk):
     def init_window(self):
 
         self.title("File Monitor")
-        self.geometry("1100x700")
+        self.geometry("920x560")
 
         self.dashboard_window = Dashboard(self)

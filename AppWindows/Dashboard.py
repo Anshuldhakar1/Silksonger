@@ -1,3 +1,4 @@
+import datetime
 import customtkinter as ctk
 import os
 import tkinter as tk
@@ -14,7 +15,9 @@ class Dashboard():
         self._gui_createMain()
 
         self.root.fileHandler.set_callback(self.on_file_selected)
-        self.dropdown_frame = None # Good, you already had this
+        self.dropdown_frame = None
+
+        self.log_message("Application started")
 
     def get_filename(self, filepath):
         return os.path.basename(filepath)
@@ -89,7 +92,81 @@ class Dashboard():
         self.browse_button.grid(row=0, column=2, sticky="w", padx=5)
 
     def _gui_createMain(self):
-        pass
+        self.main_frame = ctk.CTkFrame(self.root, fg_color="white")
+        self.main_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
+        self.main_frame.grid_columnconfigure(0, weight=1)  # Changed from 3 to 0
+        self.main_frame.grid_rowconfigure(1, weight=1)  # Textbox expands
+
+        # New header frame with border
+        self.monitoring_header = ctk.CTkFrame(self.main_frame, 
+                                            fg_color="white", 
+                                            border_width=1,
+                                            border_color="#E5E7EB",
+                                            corner_radius=8)
+        self.monitoring_header.grid(row=0, column=0, sticky="ew", padx=20, pady=10)
+        self.monitoring_header.grid_columnconfigure(2, weight=1)  # Space between title and buttons
+
+        # Move existing widgets to header frame
+        self.main_title = ctk.CTkLabel(self.monitoring_header, 
+                                     text="Monitoring Log", 
+                                     font=ctk.CTkFont(family="Helvetica", size=18, weight="bold"),
+                                     text_color="black")
+        self.main_title.grid(row=0, column=0, sticky="w", padx=(20,5), pady=15)
+
+        self.status_indicator_label = ctk.CTkLabel(self.monitoring_header, 
+                                                text="\u25cf Not Monitoring", 
+                                                font=ctk.CTkFont(family="Helvetica",size=12, weight="bold"),
+                                                text_color="#DC2626",
+                                                corner_radius=8)
+        self.status_indicator_label.grid(row=0, column=1, sticky="w", padx=(5,10), pady=15)
+        
+        # Right-side controls frame
+        controls_frame = ctk.CTkFrame(self.monitoring_header, fg_color="transparent")
+        controls_frame.grid(row=0, column=3, sticky="e", padx=20, pady=15)
+        
+        # Update start button (now a toggle)
+        self.start_button = ctk.CTkButton(controls_frame, 
+                                       text="",
+                                       image=self.root.play_icon,
+                                       width=32,
+                                       height=32,
+                                       font=ctk.CTkFont(size=14, weight="bold"),
+                                       fg_color="#dedede", 
+                                       hover_color="#dedede",
+                                       command=self.toggle_monitoring)
+        self.start_button.grid(row=0, column=0, sticky="e", padx=5)
+        
+        # Update stop button text and colors to indicate it's for releasing the file
+        self.stop_button = ctk.CTkButton(controls_frame, 
+                                      text="",
+                                      image=self.root.pause_icon,
+                                      width=32,
+                                      height=32,
+                                      font=ctk.CTkFont(size=14, weight="bold"),
+                                      fg_color="#EF4444",
+                                      hover_color="#DC2626",
+                                      command=self.release_file,
+                                      state="disabled")
+        self.stop_button.grid(row=0, column=1, sticky="e", padx=5)
+
+        # Main log area with slightly off-white background
+        self.output_textbox = ctk.CTkTextbox(self.main_frame, 
+                                          font=("Consolas", 13),
+                                          corner_radius=8,
+                                          fg_color="#F8FAFC",  # Slightly off-white
+                                          text_color="black",
+                                          border_width=1,
+                                          border_color="#E5E7EB",
+                                          state="disabled")
+        self.output_textbox.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
+
+        # Configure tags for main log
+        self.output_textbox._textbox.tag_configure("timestamp", foreground="gray")
+        self.output_textbox._textbox.tag_configure("START", foreground="#059669", font=("Consolas", 13, "bold")) # Green
+        self.output_textbox._textbox.tag_configure("STOP", foreground="#DC2626", font=("Consolas", 13, "bold")) # Red
+        self.output_textbox._textbox.tag_configure("MODIFY", foreground="#D97706", font=("Consolas", 13, "bold")) # Amber
+        self.output_textbox._textbox.tag_configure("INFO", foreground="gray")
+        self.output_textbox._textbox.tag_configure("ERROR", foreground="red")
 
     def show_recent_files_menu(self, widget):
         if self.dropdown_frame:
@@ -180,3 +257,23 @@ class Dashboard():
                 return 
             master = getattr(master, 'master', None)
         self.close_dropdown()
+
+    def toggle_monitoring(self):
+        pass
+
+    def release_file(self):
+        pass
+
+    def log_message(self, message: str, tag: str = None):
+        """Helper function to add a message to the main output textbox."""
+        self.output_textbox.configure(state="normal")
+        
+        timestamp = f"{datetime.datetime.now():%H:%M:%S} "
+        self.output_textbox.insert("end", timestamp, "timestamp")
+        
+        if tag:
+            self.output_textbox.insert("end", f"{tag:8} ", tag) # 8 chars padding
+        
+        self.output_textbox.insert("end", f"{message}\n")
+        self.output_textbox.see("end")
+        self.output_textbox.configure(state="disabled")
