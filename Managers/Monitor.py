@@ -92,7 +92,7 @@ class Monitor:
 
             # Compare old data vs new data
             diff = list(dictdiffer.diff(self.previous_data, current_data))
-            
+
             if diff:
                 change_data = {
                     "filepath": self.target_file,
@@ -101,18 +101,7 @@ class Monitor:
                 }
                 
                 self.root.W_dashboard.main_log(f"Found {len(diff)} changes in {os.path.basename(self.target_file)}", "MODIFY")
-                # for change in diff:
-                #     operation = change[0]
-                #     path = change[1]
-                #     if operation == "change":
-                #         old_val, new_val = change[2]
-                #         self.root.W_dashboard.main_log(f"  Changed {path}: {old_val} → {new_val}", "INFO")
-                #     elif operation == "add":
-                #         self.root.W_dashboard.main_log(f"  Added {path}: {change[2]}", "INFO")
-                #     elif operation == "remove":
-                #         self.root.W_dashboard.main_log(f"  Removed {path}: {change[2]}", "INFO")
-                
-                self.root.show_notification()  # Add this line to show notification
+                self.root.show_notification(change_data)  # Pass change_data to notification
                 self.previous_data = current_data
 
         except Exception as e:

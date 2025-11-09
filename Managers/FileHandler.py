@@ -8,7 +8,7 @@ from Managers.SaveDecoder import decrypt_hollow_knight_save
 class FileHandler():
     def __init__(self):
         base_path = os.path.join(os.path.expanduser("~"), "AppData", "LocalLow", "Team Cherry")
-        silksong_path = os.path.join(base_path, "Hollow Knight Silksong", "1156132065")
+        silksong_path = os.path.join(base_path, "Hollow Knight Silksong")
 
         self.target_directory = os.path.expanduser("~")
         if os.path.exists(silksong_path):
@@ -52,8 +52,12 @@ class FileHandler():
         )
         if filename:
             self.save_to_recents(filename)
+            self.create_file_slot(filename)
             if self.file_selected_callback:
                 self.file_selected_callback(filename)
+   
+    def create_file_slot(self, filename):
+        pass
 
     def get_recent_files(self):
         try:

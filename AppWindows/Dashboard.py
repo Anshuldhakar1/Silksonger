@@ -19,7 +19,7 @@ class Dashboard():
 
         self.main_log("Application started")
 
-    #  self.output_textbox._textbox.tag_configure("timestamp", foreground="gray")
+    # self.output_textbox._textbox.tag_configure("timestamp", foreground="gray")
     # self.output_textbox._textbox.tag_configure("START", foreground="#059669", font=("Consolas", 13, "bold")) # Green
     # self.output_textbox._textbox.tag_configure("STOP", foreground="#DC2626", font=("Consolas", 13, "bold")) # Red
     # self.output_textbox._textbox.tag_configure("MODIFY", foreground="#D97706", font=("Consolas", 13, "bold")) # Amber

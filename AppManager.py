@@ -104,6 +104,6 @@ class AppManager(ctk.CTk):
         self.quit()
         self.destroy()
 
-    def show_notification(self):
+    def show_notification(self, change_data=None):
         if self.notification_window is None or not self.notification_window.winfo_exists():
-            self.notification_window = NotificationWindow(self)
+            self.notification_window = NotificationWindow(self, change_data=change_data)
