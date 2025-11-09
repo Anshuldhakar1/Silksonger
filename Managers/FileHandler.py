@@ -1,5 +1,6 @@
 import os
 import time
+import datetime
 import json
 from tkinter import filedialog
 from Managers.JsonManager import JsonManager
@@ -19,8 +20,9 @@ class FileHandler():
         self.file_selected_callback = None
 
         self.data_dir = ".trackerdata"
+        self.saves_dir = "files"
         self.recent_files_path = os.path.join(self.data_dir, "recent_files.json")
-        self.saved_notes_path = os.path.join(self.data_dir, "saved.json")
+        self.saved_notes_path = os.path.join(self.data_dir, "files_access_tracker.txt")
         self.imp_path = os.path.join(self.data_dir, "star_changes.json")
 
     def set_callback(self, callback):
@@ -55,9 +57,74 @@ class FileHandler():
             self.create_file_slot(filename)
             if self.file_selected_callback:
                 self.file_selected_callback(filename)
+
+            self.update_tracker_logs(filename)
    
-    def create_file_slot(self, filename):
-        pass
+    def update_tracker_logs(self, filename):
+        try:
+            with open(self.saved_notes_path, 'a') as f:
+                _time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"{_time} || {os.path.basename(filename)}")
+        except Exception as e:
+            print(f"Error Opening the file tracker logs. \n {e}")
+
+    def create_file_slot(self, filename_raw):
+        new_filename = os.path.basename(filename_raw).replace(".dat",".json")
+        filepath = os.path.join(self.data_dir,"files",new_filename)
+        if not os.path.isfile(filepath):
+            try:
+                with open(filepath,'w') as f:
+                    json.dump({},f)
+            except Exception as e:
+                print(f"Exception occured while creating file slot: {e}")
+
+    def save_new_change(self,filename_raw,note,diff):
+        try:
+            new_filename = os.path.basename(filename_raw).replace(".dat",".json")
+            filename = os.path.join(self.data_dir,"files",new_filename)
+
+            data = {}
+            if os.path.isfile(filename) and os.path.getsize(filename) > 0:
+                with open(filename, 'r') as file:
+                    data = json.load(file)
+
+            data[note] = diff
+            with open(filename, 'w') as file:
+                json.dump(data, file, indent=4)
+        except Exception as e:
+            print(f"Error adding a new change. {e}")
+
+    def append_to_json_dict(filename, new_key, new_value):
+        data = {}
+
+        # Load existing data if file exists and has content
+        if os.path.isfile(filename) and os.path.getsize(filename) > 0:
+            with open(filename, 'r') as file:
+                data = json.load(file)
+
+        # Add or update the new key-value pair
+        data[new_key] = new_value
+
+        # Write updated dictionary back to file
+        with open(filename, 'w') as file:
+            json.dump(data, file, indent=4)
+
+        # path = os.path.join(self.data_dir, filename)
+        # print(path)
+        # if not os.path.isfile(self.saved_notes_path):
+        #     try:
+        #         with open(self.saved_notes_path, 'w') as f:
+        #             pass
+        #     except Exception as e:
+        #         print(f"Error creating file slot: {e}")
+
+        # # now the file exists and we will read it
+
+        # try:
+        #     with open(self.saved_notes_path,'r') as f:
+        # except Exception as e:
+        #     print(f"Error reading the saves file")
+
 
     def get_recent_files(self):
         try:

@@ -14,6 +14,8 @@ class NotificationWindow(ctk.CTkToplevel):
         self.geometry("900x550") 
         self.app_root = args[0]
         
+        self.change_data = change_data
+
         # --- Main Window Configuration ---
         self.grid_rowconfigure(0, weight=0)  # Header row
         self.grid_rowconfigure(1, weight=1)  # Main content row
@@ -33,36 +35,36 @@ class NotificationWindow(ctk.CTkToplevel):
         )
 
         # --- 1. Header Frame ---
-        header_frame = ctk.CTkFrame(self, fg_color="white", height=60, corner_radius=0)
-        header_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
+        self.header_frame = ctk.CTkFrame(self, fg_color="white", height=60, corner_radius=0)
+        self.header_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
         
-        icon_label = ctk.CTkLabel(
-            header_frame, text="", image=self.app_icon, compound="left"
+        self.icon_label = ctk.CTkLabel(
+            self.header_frame, text="", image=self.app_icon, compound="left"
         )
-        icon_label.place(x=20, y=18)
+        self.icon_label.place(x=20, y=18)
         
-        text_container = ctk.CTkFrame(header_frame, fg_color="transparent")
-        text_container.place(x=60, y=12)
+        self.text_container = ctk.CTkFrame(self.header_frame, fg_color="transparent")
+        self.text_container.place(x=60, y=12)
         
-        title_text = f"File Change: {os.path.basename(change_data['filepath']) if change_data else 'Unknown'}"
-        title_label = ctk.CTkLabel(
-            text_container,
-            text=title_text,
+        self.title_text = f"File Change: {os.path.basename(self.change_data['filepath']) if self.change_data else 'Unknown'}"
+        self.title_label = ctk.CTkLabel(
+            self.text_container,
+            text=self.title_text,
             font=ctk.CTkFont(family="Helvetica", size=16, weight="bold"),
             anchor="w"
         )
-        title_label.place(x=0, y=0)
+        self.title_label.place(x=0, y=0)
         
-        subtitle_text = f"Modified at {change_data['timestamp'] if change_data else 'Unknown time'}"
-        subtitle_label = ctk.CTkLabel(
-            text_container,
-            text=subtitle_text,
+        self.subtitle_text = f"Modified at {self.change_data['timestamp'] if self.change_data else 'Unknown time'}"
+        self.subtitle_label = ctk.CTkLabel(
+            self.text_container,
+            text=self.subtitle_text,
             font=ctk.CTkFont(family="Helvetica", size=12),
             text_color="gray",
             anchor="w"
         )
         # Placed slightly closer to the title
-        subtitle_label.place(x=0, y=20) 
+        self.subtitle_label.place(x=0, y=20) 
 
         # close_btn = ctk.CTkButton(
         #     header_frame, text="✕", font=ctk.CTkFont(size=16),
@@ -72,22 +74,22 @@ class NotificationWindow(ctk.CTkToplevel):
         # close_btn.place(relx=1.0, y=15, x=-15, anchor="ne")
 
         # --- 2. Diff Frame (Left Column) ---
-        diff_frame = ctk.CTkFrame(self, fg_color="#ffffff", corner_radius=0)
-        diff_frame.grid(row=1, column=0, sticky="nsew", padx=(1, 0), pady=(0, 1))
-        diff_frame.grid_rowconfigure(1, weight=1)
-        diff_frame.grid_columnconfigure(0, weight=1)
+        self.diff_frame = ctk.CTkFrame(self, fg_color="#ffffff", corner_radius=0)
+        self.diff_frame.grid(row=1, column=0, sticky="nsew", padx=(1, 0), pady=(0, 1))
+        self.diff_frame.grid_rowconfigure(1, weight=1)
+        self.diff_frame.grid_columnconfigure(0, weight=1)
 
-        diff_title_label = ctk.CTkLabel(
-            diff_frame,
-            text=f"Changes in {change_data['filepath'] if change_data else 'Unknown'}",
+        self.diff_title_label = ctk.CTkLabel(
+            self.diff_frame,
+            text=f"Changes in {self.change_data['filepath'] if self.change_data else 'Unknown'}",
             font=ctk.CTkFont(family="Helvetica", size=13),
             text_color="#555",
             anchor="w"
         )
-        diff_title_label.grid(row=0, column=0, sticky="ew", padx=20, pady=(10, 5))
+        self.diff_title_label.grid(row=0, column=0, sticky="ew", padx=20, pady=(10, 5))
         
         self.diff_textbox = ctk.CTkTextbox(
-            diff_frame, font=("Consolas", 13), fg_color="#f8f8f8",
+            self.diff_frame, font=("Consolas", 13), fg_color="#f8f8f8",
             wrap="none", border_width=1, border_color="#e0e0e0"
         )
         self.diff_textbox.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
@@ -96,36 +98,39 @@ class NotificationWindow(ctk.CTkToplevel):
         self.diff_textbox.tag_config("del", background="#ffeef0", foreground="#b30000")
         self.diff_textbox.tag_config("context", foreground="#555")
 
-        self._populate_diff(change_data)
+        self._populate_diff(self.change_data)
 
         # --- 3. Sidebar Frame (Right Column) ---
-        sidebar_frame = ctk.CTkFrame(self, fg_color="#f8fafc", corner_radius=0)
-        sidebar_frame.grid(row=1, column=1, sticky="nsew", padx=(1, 1), pady=(0, 1))
-        sidebar_frame.grid_rowconfigure(1, weight=1)
-        sidebar_frame.grid_columnconfigure(0, weight=1)
+        self.sidebar_frame = ctk.CTkFrame(self, fg_color="#f8fafc", corner_radius=0)
+        self.sidebar_frame.grid(row=1, column=1, sticky="nsew", padx=(1, 1), pady=(0, 1))
+        self.sidebar_frame.grid_rowconfigure(1, weight=1)
+        self.sidebar_frame.grid_columnconfigure(0, weight=1)
 
-        notes_label = ctk.CTkLabel(
-            sidebar_frame, text="Notes",
+        self.notes_label = ctk.CTkLabel(
+            self.sidebar_frame, text="Notes",
             font=ctk.CTkFont(family="Helvetica", size=13, weight="bold"),
             anchor="w"
         )
-        notes_label.grid(row=0, column=0, sticky="ew", padx=15, pady=(10, 5))
+        self.notes_label.grid(row=0, column=0, sticky="ew", padx=15, pady=(10, 5))
 
         self.notes_textbox = ctk.CTkTextbox(
-            sidebar_frame, font=("Helvetica", 13),
+            self.sidebar_frame, font=("Helvetica", 13),
             border_width=1, border_color="#ccc", fg_color="#ffffff"
         )
         self.notes_textbox.grid(row=1, column=0, sticky="nsew", padx=15, pady=(0, 15))
         
+        # --- Bind the <KeyRelease> event to the validation function ---
+        self.notes_textbox.bind("<KeyRelease>", self._validate_notes)
+
         # --- Sidebar Action Buttons (Refactored with .grid) ---
-        button_frame = ctk.CTkFrame(sidebar_frame, fg_color="transparent")
-        button_frame.grid(row=2, column=0, sticky="ew", padx=15, pady=(0, 15))
+        self.button_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
+        self.button_frame.grid(row=2, column=0, sticky="ew", padx=15, pady=(0, 15))
         
         # Configure columns for 50/50 split
-        button_frame.grid_columnconfigure((0, 1), weight=1) 
+        self.button_frame.grid_columnconfigure((0, 1), weight=1) 
 
-        mark_important_btn = ctk.CTkButton(
-            button_frame,
+        self.mark_important_btn = ctk.CTkButton(
+            self.button_frame,
             text="Mark as Important",
             image=self.star_icon, 
             compound="left",
@@ -134,21 +139,22 @@ class NotificationWindow(ctk.CTkToplevel):
             command=self.mark_important_btn
         )
         # Full width (spans 2 columns), with 6px padding below it
-        mark_important_btn.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 6))
+        self.mark_important_btn.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 6))
 
-        save_btn = ctk.CTkButton(
-            button_frame,
+        self.save_btn = ctk.CTkButton(
+            self.button_frame,
             text="Save Change",
             fg_color="#ffffff", text_color="#111",
             border_width=1, border_color="#ccc",
             hover_color="#f0f0f0",
+            state="disabled",
             command=self.save_btn
         )
         # Row 1, Column 0. 3px padding on the right.
-        save_btn.grid(row=1, column=0, sticky="ew", padx=(0, 3))
+        self.save_btn.grid(row=1, column=0, sticky="ew", padx=(0, 3))
 
-        discard_btn = ctk.CTkButton(
-            button_frame,
+        self.discard_btn = ctk.CTkButton(
+            self.button_frame,
             text="Discard Change",
             fg_color="#ffffff", text_color="#111",
             border_width=1, border_color="#ccc",
@@ -156,7 +162,7 @@ class NotificationWindow(ctk.CTkToplevel):
             command=self.discard_btn
         )
         # Row 1, Column 1. 3px padding on the left.
-        discard_btn.grid(row=1, column=1, sticky="ew", padx=(3, 0))
+        self.discard_btn.grid(row=1, column=1, sticky="ew", padx=(3, 0))
 
         # --- Final Window Setup ---
         self.attributes('-topmost', True)
@@ -231,7 +237,27 @@ class NotificationWindow(ctk.CTkToplevel):
         pass
 
     def save_btn(self):
-        pass
+        note = self.notes_textbox.get("1.0", "end").strip()
+
+        if not note:
+            return
+
+        self.app_root.M_fileHandler.save_new_change(
+            self.change_data['filepath'],
+            note,
+            self.change_data
+        )
+
+        self.destroy()
 
     def discard_btn(self):
-        pass
+        self.destroy()
+
+    def _validate_notes(self, event=None):
+        """Enables/disables the save button based on notes content."""
+        note_content = self.notes_textbox.get("1.0", "end").strip()
+        
+        if note_content:
+            self.save_btn.configure(state="normal")
+        else:
+            self.save_btn.configure(state="disabled")

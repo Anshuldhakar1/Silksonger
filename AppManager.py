@@ -67,12 +67,23 @@ class AppManager(ctk.CTk):
     def init_data(self):
         try:
             os.makedirs(self.M_fileHandler.data_dir, exist_ok=True)
+            # create a folder for all the saves
+            os.makedirs( os.path.join(self.M_fileHandler.data_dir,self.M_fileHandler.saves_dir),exist_ok=True)
             
-            if os.path.exists(self.M_fileHandler.imp_path):
-                self.important_changes = JsonManager.load_json(self.M_fileHandler.imp_path)
+            # if os.path.exists(self.M_fileHandler.imp_path):
+            #     self.important_changes = JsonManager.load_json(self.M_fileHandler.imp_path)
 
-            if os.path.exists(self.M_fileHandler.saved_notes_path):
-                self.saved_notes = JsonManager.load_json(self.M_fileHandler.saved_notes_path)
+            # if os.path.exists(self.M_fileHandler.saved_notes_path):
+            #     self.saved_notes = JsonManager.load_json(self.M_fileHandler.saved_notes_path)
+
+            # create saves.json that will store the metadata 
+            if not os.path.isfile(self.M_fileHandler.saved_notes_path):
+                try:
+                    with open(self.M_fileHandler.saved_notes_path, 'w') as f:
+                        # json.dump([], f)
+                        pass
+                except Exception as e:
+                    print(f"Error creating file slot: {e}")
                     
         except Exception as e:
             print(f"Error initializing data storage: {e}")
