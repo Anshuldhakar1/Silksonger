@@ -64,7 +64,7 @@ class FileHandler():
         try:
             with open(self.saved_notes_path, 'a') as f:
                 _time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                f.write(f"{_time} || {os.path.basename(filename)}")
+                f.write(f"{_time} || {os.path.basename(filename)}\n")
         except Exception as e:
             print(f"Error Opening the file tracker logs. \n {e}")
 
