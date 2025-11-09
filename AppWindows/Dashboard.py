@@ -214,6 +214,8 @@ class Dashboard():
         self.output_textbox._textbox.tag_configure("START", foreground="#059669", font=("Consolas", 13, "bold")) # Green
         self.output_textbox._textbox.tag_configure("STOP", foreground="#DC2626", font=("Consolas", 13, "bold")) # Red
         self.output_textbox._textbox.tag_configure("MODIFY", foreground="#D97706", font=("Consolas", 13, "bold")) # Amber
+        self.output_textbox._textbox.tag_configure("SAVED", foreground="#D9B906", font=("Consolas", 13, "bold")) # Yellow
+        self.output_textbox._textbox.tag_configure("SAVED_IMP", foreground="#7706D9", font=("Consolas", 13, "bold")) # Purple
         self.output_textbox._textbox.tag_configure("INFO", foreground="gray")
         self.output_textbox._textbox.tag_configure("ERROR", foreground="red")
 

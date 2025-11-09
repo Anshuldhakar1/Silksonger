@@ -15,6 +15,7 @@ class NotificationWindow(ctk.CTkToplevel):
         self.app_root = args[0]
         
         self.change_data = change_data
+        self.is_imp = False
 
         # --- Main Window Configuration ---
         self.grid_rowconfigure(0, weight=0)  # Header row
@@ -234,7 +235,12 @@ class NotificationWindow(ctk.CTkToplevel):
         self.diff_textbox.configure(state="disabled") # Make read-only
 
     def mark_important_btn(self):
-        pass
+        if not self.is_imp:
+            self.is_imp = True
+            self.mark_important_btn.configure(text="Unmark")
+        else:
+            self.is_imp = False
+            self.mark_important_btn.configure(text="Mark as Important")
 
     def save_btn(self):
         note = self.notes_textbox.get("1.0", "end").strip()
@@ -245,12 +251,20 @@ class NotificationWindow(ctk.CTkToplevel):
         self.app_root.M_fileHandler.save_new_change(
             self.change_data['filepath'],
             note,
-            self.change_data
+            self.change_data,
+            self.is_imp
         )
+
+        msg = f"Saved change with note: \"{note}\""
+        if self.is_imp:
+            msg = f"Saved important change with note: \"{note}\""
+        self.app_root.W_dashboard.main_log( msg, "SAVED" if not self.is_imp else "SAVED_IMP")
+        self.app_root.W_dashboard.main_log("Waiting for changes...", "INFO")
 
         self.destroy()
 
     def discard_btn(self):
+        self.app_root.W_dashboard.main_log("Waiting for changes...", "INFO")
         self.destroy()
 
     def _validate_notes(self, event=None):

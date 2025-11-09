@@ -18,7 +18,7 @@ class AppManager(ctk.CTk):
         self.M_fileHandler = None
         self.M_monitor = None
         self.W_dashboard = None
-        self.notification_window = None
+        self.W_notification = None
 
         self.important_changes = {} 
         self.saved_notes = {}
@@ -116,5 +116,5 @@ class AppManager(ctk.CTk):
         self.destroy()
 
     def show_notification(self, change_data=None):
-        if self.notification_window is None or not self.notification_window.winfo_exists():
-            self.notification_window = NotificationWindow(self, change_data=change_data)
+        if self.W_notification is None or not self.W_notification.winfo_exists():
+            self.W_notification = NotificationWindow(self, change_data=change_data)

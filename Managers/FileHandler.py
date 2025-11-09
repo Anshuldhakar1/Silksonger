@@ -78,53 +78,38 @@ class FileHandler():
             except Exception as e:
                 print(f"Exception occured while creating file slot: {e}")
 
-    def save_new_change(self,filename_raw,note,diff):
-        try:
-            new_filename = os.path.basename(filename_raw).replace(".dat",".json")
+    def save_new_change(self,filename_raw,note,diff,imp):
+        if not imp:
+            try:
+                new_filename = os.path.basename(filename_raw).replace(".dat",".json")
+                filename = os.path.join(self.data_dir,"files",new_filename)
+
+                data = {}
+                if os.path.isfile(filename) and os.path.getsize(filename) > 0:
+                    with open(filename, 'r') as file:
+                        data = json.load(file)
+
+                data[note] = diff
+                with open(filename, 'w') as file:
+                    json.dump(data, file, indent=4)
+            except Exception as e:
+                print(f"Error adding a new change. {e}")
+        else:
+            new_filename = os.path.basename(filename_raw).replace(".dat",".imp.json")
             filename = os.path.join(self.data_dir,"files",new_filename)
 
+            if not os.path.isfile(filename):
+                with open(filename,'w') as f:
+                    json.dump({},f)
+
             data = {}
-            if os.path.isfile(filename) and os.path.getsize(filename) > 0:
+            if os.path.getsize(filename) > 0:
                 with open(filename, 'r') as file:
                     data = json.load(file)
 
             data[note] = diff
             with open(filename, 'w') as file:
-                json.dump(data, file, indent=4)
-        except Exception as e:
-            print(f"Error adding a new change. {e}")
-
-    def append_to_json_dict(filename, new_key, new_value):
-        data = {}
-
-        # Load existing data if file exists and has content
-        if os.path.isfile(filename) and os.path.getsize(filename) > 0:
-            with open(filename, 'r') as file:
-                data = json.load(file)
-
-        # Add or update the new key-value pair
-        data[new_key] = new_value
-
-        # Write updated dictionary back to file
-        with open(filename, 'w') as file:
-            json.dump(data, file, indent=4)
-
-        # path = os.path.join(self.data_dir, filename)
-        # print(path)
-        # if not os.path.isfile(self.saved_notes_path):
-        #     try:
-        #         with open(self.saved_notes_path, 'w') as f:
-        #             pass
-        #     except Exception as e:
-        #         print(f"Error creating file slot: {e}")
-
-        # # now the file exists and we will read it
-
-        # try:
-        #     with open(self.saved_notes_path,'r') as f:
-        # except Exception as e:
-        #     print(f"Error reading the saves file")
-
+                json.dump(data, file, indent=4)               
 
     def get_recent_files(self):
         try:
