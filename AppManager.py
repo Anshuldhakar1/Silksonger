@@ -39,6 +39,12 @@ class AppManager(ctk.CTk):
 
         return os.path.join(base_path, relative_path)   
 
+    def load_logs(self, logs):
+        self.saved_notes = logs[0]
+        self.important_changes = logs[1]
+        # print(self.important_changes)
+        # print(self.saved_notes)
+
     def init_icons(self):
         self.app_icon = ctk.CTkImage(
             light_image=Image.open( self.resource_path("assets/icons/app_icon.png") ),

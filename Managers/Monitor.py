@@ -52,6 +52,9 @@ class Monitor:
         self.target_file = None
         self.previous_data = None
 
+    def get_target(self):
+        return self.target_file
+
     def start_monitoring(self):
         if not self.is_target_set:
             self.root.W_dashboard.main_log("No file selected to monitor", "ERROR")

@@ -25,6 +25,25 @@ class FileHandler():
         self.saved_notes_path = os.path.join(self.data_dir, "files_access_tracker.txt")
         self.imp_path = os.path.join(self.data_dir, "star_changes.json")
 
+    def get_logs(self, target):
+        filename = os.path.basename(target)
+        normal_logs_filename = filename.replace(".dat",".json")
+        imp_logs_filename = filename.replace(".dat",".imp.json")
+
+        normal_logs_path = os.path.join(self.data_dir,self.saves_dir,normal_logs_filename)
+        imp_logs_path = os.path.join(self.data_dir,self.saves_dir,imp_logs_filename)
+
+        logs = []
+        with open(normal_logs_path,'r') as normal_logs_file:
+            logs.append(
+                json.load(normal_logs_file)
+            )
+        with open(imp_logs_path,'r') as imp_logs_file:
+            logs.append(
+                json.load(imp_logs_file)
+            )
+        return logs
+
     def set_callback(self, callback):
         self.file_selected_callback = callback
 

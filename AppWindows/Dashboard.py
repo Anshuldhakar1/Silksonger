@@ -33,6 +33,26 @@ class Dashboard():
 
         self.enable_monitor_btn(True)
         self.enable_stop_btn(True)
+
+        self.clear_log_entries()
+        if self.root.M_monitor.is_target_set:
+            self.logs = self.root.M_fileHandler.get_logs(self.root.M_monitor.get_target())
+            self.root.load_logs(self.logs)
+            self.load_normal_logs()
+
+    def load_normal_logs(self):
+        # print(self.logs[0]["adasdasdasd"])
+        for log_key in self.logs[0].keys():
+            log = self.logs[0][log_key]
+            timestamp = log['timestamp'][-8:]
+            num_diffs = len(log['diff'])
+            self.add_log_entry(
+                timestamp=timestamp,
+                main_text=log_key, 
+                sub_text=f"{num_diffs} changes detected",
+                log_id=log_key
+            )
+        pass
         
     def toggle_monitoring(self):  # means that the user pressed the play/pause btn
         if self.root.M_monitor.is_target_set:
@@ -214,7 +234,7 @@ class Dashboard():
     def add_log_entry(self, timestamp, main_text, sub_text, log_id):
         small_font = ctk.CTkFont(family="Helvetica", size=11, weight="normal")
         main_font = ctk.CTkFont(family="Helvetica", size=13, weight="bold")
-        NORMAL_BG = "transparent"
+        NORMAL_BG = "#EFEFEF"
         HOVER_BG = "#E5E5E5"
 
         entry_frame = ctk.CTkFrame(self.log_list_frame, 
@@ -229,7 +249,7 @@ class Dashboard():
                               width=3, 
                               fg_color="#C8C8C8", 
                               corner_radius=2)
-        v_line.pack(side="left", fill="y", padx=(5, 10), pady=5)
+        v_line.pack(side="left", fill="y", padx=(5, 10), pady=10)
 
         # 3. Create an encompassing frame for the text
         text_frame = ctk.CTkFrame(entry_frame, fg_color="transparent")
@@ -267,256 +287,6 @@ class Dashboard():
             widget.bind("<Button-1>", _on_click)
             widget.bind("<Enter>", _on_enter)
             widget.bind("<Leave>", _on_leave)
-
-    # def add_log_entry(self, timestamp, main_text, sub_text, log_id):
-    #     """
-    #     Creates a new, clickable log entry widget inside the scrollable frame.
-    #     """
-    #     # --- Define Fonts and Colors ---
-    #     small_font = ctk.CTkFont(family="Helvetica", size=11, weight="normal")
-    #     main_font = ctk.CTkFont(family="Helvetica", size=13, weight="bold")
-    #     NORMAL_BG = "transparent"
-    #     HOVER_BG = "#E5E5E5"
-
-    #     # 1. Create the main clickable frame
-    #     entry_frame = ctk.CTkFrame(self.log_list_frame, fg_color=NORMAL_BG, cursor="hand2")
-    #     entry_frame.pack(fill="x", pady=(5, 0), padx=5)
-        
-    #     # 2. Create the vertical line
-    #     v_line = ctk.CTkFrame(entry_frame, 
-    #                           width=3, 
-    #                           fg_color="#C8C8C8", 
-    #                           corner_radius=2)
-    #     v_line.pack(side="left", fill="y", padx=(5, 10), pady=5)
-
-    #     # 3. Create an encompassing frame for the text
-    #     text_frame = ctk.CTkFrame(entry_frame, fg_color="transparent")
-    #     text_frame.pack(side="left", fill="x", expand=True, pady=5, padx=(0, 5))
-
-    #     # 4. Create the text labels and PACK them (with NO pady)
-    #     timestamp_label = ctk.CTkLabel(text_frame, text=timestamp,
-    #                                    font=small_font, text_color="gray",
-    #                                    anchor="w")
-    #     timestamp_label.pack(anchor="w", pady=0) # <--- CHANGED (was 0)
-
-    #     main_label = ctk.CTkLabel(text_frame, text=main_text,
-    #                               font=main_font, text_color="black",
-    #                               anchor="w")
-    #     main_label.pack(anchor="w", pady=0) # <--- CHANGED (was (1, 0))
-
-    #     sub_label = ctk.CTkLabel(text_frame, text=sub_text,
-    #                              font=small_font, text_color="gray",
-    #                              anchor="w")
-    #     sub_label.pack(anchor="w", pady=0) # <--- CHANGED (was 0)
-
-    #     # 5. Make it all clickable
-        
-    #     def _on_click(event):
-    #         self._on_log_entry_click(log_id) 
-
-    #     def _on_enter(event):
-    #         entry_frame.configure(fg_color=HOVER_BG) 
-    #         text_frame.configure(fg_color=HOVER_BG) 
-            
-    #     def _on_leave(event):
-    #         entry_frame.configure(fg_color=NORMAL_BG)
-    #         text_frame.configure(fg_color=NORMAL_BG)
-
-    #     # Bind functions
-    #     widgets_to_bind = [entry_frame, v_line, text_frame, timestamp_label, main_label, sub_label]
-    #     for widget in widgets_to_bind:
-    #         widget.bind("<Button-1>", _on_click)
-    #         widget.bind("<Enter>", _on_enter)
-    #         widget.bind("<Leave>", _on_leave)
-
-    # def add_log_entry(self, timestamp, main_text, sub_text, log_id):
-    #     """
-    #     Creates a new, clickable log entry widget inside the scrollable frame.
-    #     """
-    #     # --- Define Fonts and Colors ---
-    #     small_font = ctk.CTkFont(family="Helvetica", size=11, weight="normal")
-    #     main_font = ctk.CTkFont(family="Helvetica", size=13, weight="bold")
-    #     NORMAL_BG = "transparent"
-    #     HOVER_BG = "#E5E5E5"
-
-    #     # 1. Create the main clickable frame
-    #     # 'fill="x"' makes it fill the width (this is the "stretch" you see, and it's intended)
-    #     entry_frame = ctk.CTkFrame(self.log_list_frame, fg_color=NORMAL_BG, cursor="hand2")
-    #     entry_frame.pack(fill="x", pady=(5, 0), padx=5)
-        
-    #     # 2. Create the vertical line
-    #     v_line = ctk.CTkFrame(entry_frame, 
-    #                           width=3, 
-    #                           fg_color="#C8C8C8", # Darker gray for hover contrast
-    #                           corner_radius=2)
-    #     # Pack left, fill="y" makes it match the height of the text frame
-    #     v_line.pack(side="left", fill="y", padx=(5, 10), pady=5)
-
-    #     # 3. Create an encompassing frame for the text
-    #     text_frame = ctk.CTkFrame(entry_frame, fg_color="transparent")
-    #     # Pack left, expand=True, fill="x" makes it take all remaining space
-    #     text_frame.pack(side="left", fill="x", expand=True, pady=5, padx=(0, 5))
-
-    #     # 4. Create the text labels and PACK them (with pady=0 for no gap)
-    #     timestamp_label = ctk.CTkLabel(text_frame, text=timestamp,
-    #                                    font=small_font, text_color="gray",
-    #                                    anchor="w")
-    #     timestamp_label.pack(anchor="w", pady=0) # <-- No vertical padding
-
-    #     main_label = ctk.CTkLabel(text_frame, text=main_text,
-    #                               font=main_font, text_color="black",
-    #                               anchor="w")
-    #     main_label.pack(anchor="w", pady=(1, 0)) # <-- 1px padding on top
-
-    #     sub_label = ctk.CTkLabel(text_frame, text=sub_text,
-    #                              font=small_font, text_color="gray",
-    #                              anchor="w")
-    #     sub_label.pack(anchor="w", pady=0) # <-- No vertical padding
-
-    #     # 5. Make it all clickable
-        
-    #     def _on_click(event):
-    #         self._on_log_entry_click(log_id) 
-
-    #     def _on_enter(event):
-    #         entry_frame.configure(fg_color=HOVER_BG) 
-    #         text_frame.configure(fg_color=HOVER_BG) 
-            
-    #     def _on_leave(event):
-    #         entry_frame.configure(fg_color=NORMAL_BG)
-    #         text_frame.configure(fg_color=NORMAL_BG)
-
-    #     # Bind functions
-    #     widgets_to_bind = [entry_frame, v_line, text_frame, timestamp_label, main_label, sub_label]
-    #     for widget in widgets_to_bind:
-    #         widget.bind("<Button-1>", _on_click)
-    #         widget.bind("<Enter>", _on_enter)
-    #         widget.bind("<Leave>", _on_leave)
-
-    # def add_log_entry(self, timestamp, main_text, sub_text, log_id):
-    #     """
-    #     Creates a new, clickable log entry widget inside the scrollable frame.
-    #     """
-    #     # --- Define Fonts and Colors ---
-    #     small_font = ctk.CTkFont(family="Helvetica", size=11, weight="normal")
-    #     main_font = ctk.CTkFont(family="Helvetica", size=13, weight="bold")
-    #     # NORMAL_BG = "transparent"
-    #     NORMAL_BG = "green"
-    #     HOVER_BG = "#E5E5E5"
-
-    #     # 1. Create the main clickable frame
-    #     entry_frame = ctk.CTkFrame(self.log_list_frame, fg_color=NORMAL_BG, cursor="hand2")
-    #     entry_frame.pack(fill="x", pady=(5, 0), padx=5)
-        
-    #     # 2. Create the vertical line
-    #     v_line = ctk.CTkFrame(entry_frame, 
-    #                           width=3, 
-    #                           fg_color="#C8C8C8", 
-    #                           corner_radius=2)
-    #     # Use pack(side="left") and fill="y"
-    #     v_line.pack(side="left", fill="y", padx=(5, 10), pady=5) # <--- CHANGED
-
-    #     # 3. Create an encompassing frame for the text
-    #     text_frame = ctk.CTkFrame(entry_frame, fg_color="transparent")
-    #     # Use pack(side="left") and expand to fill remaining space
-    #     text_frame.pack(side="left", fill="x", expand=True, pady=5, padx=(0, 5)) # <--- CHANGED
-
-    #     # 4. Create the text labels and PACK them (with pady=0)
-    #     timestamp_label = ctk.CTkLabel(text_frame, text=timestamp,
-    #                                    font=small_font, text_color="gray",
-    #                                    anchor="w")
-    #     timestamp_label.pack(anchor="w", pady=0) # <--- CHANGED
-
-    #     main_label = ctk.CTkLabel(text_frame, text=main_text,
-    #                               font=main_font, text_color="black",
-    #                               anchor="w")
-    #     # Add 1px padding just on top for slight separation
-    #     main_label.pack(anchor="w", pady=(1, 0)) # <--- CHANGED
-
-    #     sub_label = ctk.CTkLabel(text_frame, text=sub_text,
-    #                              font=small_font, text_color="gray",
-    #                              anchor="w")
-    #     sub_label.pack(anchor="w", pady=0) # <--- CHANGED
-
-    #     # 5. Make it all clickable (this code is still correct)
-        
-    #     def _on_click(event):
-    #         self._on_log_entry_click(log_id) 
-
-    #     def _on_enter(event):
-    #         entry_frame.configure(fg_color=HOVER_BG) 
-    #         text_frame.configure(fg_color=HOVER_BG) 
-            
-    #     def _on_leave(event):
-    #         entry_frame.configure(fg_color=NORMAL_BG)
-    #         text_frame.configure(fg_color=NORMAL_BG)
-
-    #     # Bind functions
-    #     widgets_to_bind = [entry_frame, v_line, text_frame, timestamp_label, main_label, sub_label]
-    #     for widget in widgets_to_bind:
-    #         widget.bind("<Button-1>", _on_click)
-    #         widget.bind("<Enter>", _on_enter)
-    #         widget.bind("<Leave>", _on_leave)
-    
-    
-    # def add_log_entry2(self, timestamp, main_text, sub_text, log_id):
-    #     """
-    #     Creates a new, clickable log entry widget inside the scrollable frame.
-    #     """
-    #     # --- Define Fonts and Colors ---
-    #     small_font = ctk.CTkFont(family="Helvetica", size=11, weight="normal")
-    #     main_font = ctk.CTkFont(family="Helvetica", size=13, weight="bold")
-    #     NORMAL_BG = "transparent" # Or "#F7F7F7" to match parent
-    #     HOVER_BG = "#E5E5E5"
-
-    #     # 1. Create the main clickable frame for this entry
-    #     entry_frame = ctk.CTkFrame(self.log_list_frame, fg_color=NORMAL_BG, cursor="hand2")
-    #     entry_frame.pack(fill="x", pady=(0, 0), padx=5) # Use .pack() in a scrollable frame
-        
-    #     entry_frame.grid_columnconfigure(1, weight=1) # Make text column expand
-
-    #     # 2. Create the vertical line (like in your image)
-    #     v_line = ctk.CTkFrame(entry_frame, width=3, fg_color="#DEDEDE", corner_radius=2)
-    #     v_line.grid(row=0, rowspan=3, column=0, sticky="ns", padx=(5, 10), pady=5)
-
-    #     # 3. Create the text labels
-    #     timestamp_label = ctk.CTkLabel(entry_frame, text=timestamp,
-    #                                    font=small_font, text_color="gray",
-    #                                    anchor="w")
-    #     timestamp_label.grid(row=0, column=1, sticky="ew")
-
-    #     main_label = ctk.CTkLabel(entry_frame, text=main_text,
-    #                               font=main_font, text_color="black",
-    #                               anchor="w")
-    #     main_label.grid(row=1, column=1, sticky="ew")
-
-    #     sub_label = ctk.CTkLabel(entry_frame, text=sub_text,
-    #                              font=small_font, text_color="gray",
-    #                              anchor="w")
-    #     sub_label.grid(row=2, column=1, sticky="ew")
-
-    #     # Make it all clickable (the "clickable, not a button" part)
-        
-    #     # --- Define click and hover functions ---
-    #     def _on_click(event):
-    #         # Pass the unique log_id to your handler
-    #         self._on_log_entry_click(log_id) 
-
-    #     def _on_enter(event):
-    #         # Change bg on hover
-    #         entry_frame.configure(fg_color=HOVER_BG) 
-            
-    #     def _on_leave(event):
-    #         # Change bg back
-    #         entry_frame.configure(fg_color=NORMAL_BG)
-
-    #     # --- Bind functions to all widgets in this entry ---
-    #     # This makes the *entire block* feel clickable
-    #     widgets_to_bind = [entry_frame, v_line, timestamp_label, main_label, sub_label]
-    #     for widget in widgets_to_bind:
-    #         widget.bind("<Button-1>", _on_click)
-    #         widget.bind("<Enter>", _on_enter)
-    #         widget.bind("<Leave>", _on_leave)
 
     # Add this placeholder function to handle the click event
     def _on_log_entry_click(self, log_id):
