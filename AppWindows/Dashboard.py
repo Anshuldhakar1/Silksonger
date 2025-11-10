@@ -39,6 +39,7 @@ class Dashboard():
             self.logs = self.root.M_fileHandler.get_logs(self.root.M_monitor.get_target())
             self.root.load_logs(self.logs)
             self.load_normal_logs()
+            # self.load_imp_logs()
 
     def load_normal_logs(self):
         # print(self.logs[0]["adasdasdasd"])
@@ -52,7 +53,18 @@ class Dashboard():
                 sub_text=f"{num_diffs} changes detected",
                 log_id=log_key
             )
-        pass
+
+    def load_imp_logs(self):
+        for log_key in self.logs[1].keys():
+            log = self.logs[1][log_key]
+            timestamp = log['timestamp'][-8:]
+            num_diffs = len(log['diff'])
+            self.add_log_entry(
+                timestamp=timestamp,
+                main_text=log_key, 
+                sub_text=f"{num_diffs} changes detected",
+                log_id=log_key
+            )
         
     def toggle_monitoring(self):  # means that the user pressed the play/pause btn
         if self.root.M_monitor.is_target_set:
@@ -172,10 +184,8 @@ class Dashboard():
             fg_color="#fee2e2",
             hover_color="#fee2e2",
             text_color="#801e1e",
-            # font=ctk.CTkFont(weight="bold"),
+            command=self.logs_btn_clicked
         )
-        # self.change_to_logs_btn.pack(padx=5,pady=(5,0))
-        # self.change_to_logs_btn.pack(padx=5,pady=(5,0),expand=True,side="left",fill="x")
         self.change_to_logs_btn.grid(row=0, column=0, padx=(5, 2), pady=5, sticky="ew")
 
         self.change_to_imp_btn = ctk.CTkButton(
@@ -183,7 +193,8 @@ class Dashboard():
             text="Important",
             fg_color="#EFEFEF",
             hover_color="#efefef",
-            text_color="#838383"
+            text_color="#838383",
+            command=self.imp_btn_clicked
         )
         self.change_to_imp_btn.grid(row=0, column=1, padx=(2, 5), pady=5, sticky="ew")
 
@@ -193,26 +204,43 @@ class Dashboard():
                                                       )
         self.log_list_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=(0, 5))
 
-        # self.add_log_entry2(
-        #     timestamp="14:35:18",
-        #     main_text="save.dat modified",
-        #     sub_text="Size changed to 1.1MB",
-        #     log_id="log_001" # A unique ID for this log
-        # )
+    def imp_btn_clicked(self):
+        self.change_to_logs_btn.configure(
+            fg_color="#EFEFEF",
+            hover_color="#efefef",
+            text_color="#838383",
+        )
+        self.change_to_imp_btn.configure(
+            fg_color="#fee2e2",
+            hover_color="#fee2e2",
+            text_color="#801e1e",
+        )
+        if not self.root.M_monitor.is_monitoring:
+            # print("No moniroting going on: from dashboard")
+            pass
 
-        # self.add_log_entry(
-        #     timestamp="14:35:18",
-        #     main_text="save.dat modified",
-        #     sub_text="Size changed to 1.1MB",
-        #     log_id="log_001" # A unique ID for this log
-        # )
+        # clear the logs 
+        self.clear_log_entries()
+        self.load_imp_logs()
 
-        # self.add_log_entry(
-        #     timestamp="14:35:18",
-        #     main_text="save.dat modified",
-        #     sub_text="Size changed to 1.1MB",
-        #     log_id="log_002" # A unique ID for this log
-        # )
+    def logs_btn_clicked(self):
+        self.change_to_imp_btn.configure(
+            fg_color="#EFEFEF",
+            hover_color="#efefef",
+            text_color="#838383",
+        )
+        self.change_to_logs_btn.configure(
+            fg_color="#fee2e2",
+            hover_color="#fee2e2",
+            text_color="#801e1e",
+        )
+        if not self.root.M_monitor.is_monitoring:
+            # print("No moniroting going on: from dashboard")
+            pass
+
+        # clear the logs 
+        self.clear_log_entries()
+        self.load_normal_logs()
 
     def add_simple_msg_to_log_entry(self, msg):
         NORMAL_BG = "transparent"
