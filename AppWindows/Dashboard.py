@@ -94,6 +94,10 @@ class Dashboard():
 
             self.file_entry.delete(0, "end")
             self.file_entry.configure(placeholder_text="C:\\...\\save.dat")
+
+            self.load_normal_logs()
+            self.clear_log_entries()
+            self.add_simple_msg_to_log_entry("-------- Select a File to continue --------")
         else:
             self.main_log("No File Selected!!", "ERROR")
 
