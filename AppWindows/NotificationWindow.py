@@ -2,10 +2,6 @@ from PIL import Image
 import customtkinter as ctk
 import os
 
-from PIL import Image
-import customtkinter as ctk
-import os
-
 class NotificationWindow(ctk.CTkToplevel):
     def __init__(self, *args, change_data=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,13 +21,13 @@ class NotificationWindow(ctk.CTkToplevel):
 
         # --- Load Assets ---
         self.app_icon = ctk.CTkImage(
-            light_image=Image.open("assets/icons/app_icon.png"),
-            dark_image=Image.open("assets/icons/app_icon.png"),
+            light_image=Image.open(self.resource_path("assets/icons/app_icon.png")),
+            dark_image=Image.open(self.resource_path("assets/icons/app_icon.png")),
             size=(24, 24)
         )
         self.star_icon = ctk.CTkImage(
-            light_image=Image.open("assets/icons/star.png"),
-            dark_image=Image.open("assets/icons/star.png"),
+            light_image=Image.open(self.resource_path("assets/icons/star.png")),
+            dark_image=Image.open(self.resource_path("assets/icons/star.png")),
             size=(12, 12)
         )
 

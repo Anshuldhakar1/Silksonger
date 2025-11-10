@@ -19,13 +19,6 @@ class Dashboard():
 
         self.main_log("Application started")
 
-    # self.output_textbox._textbox.tag_configure("timestamp", foreground="gray")
-    # self.output_textbox._textbox.tag_configure("START", foreground="#059669", font=("Consolas", 13, "bold")) # Green
-    # self.output_textbox._textbox.tag_configure("STOP", foreground="#DC2626", font=("Consolas", 13, "bold")) # Red
-    # self.output_textbox._textbox.tag_configure("MODIFY", foreground="#D97706", font=("Consolas", 13, "bold")) # Amber
-    # self.output_textbox._textbox.tag_configure("INFO", foreground="gray")
-    # self.output_textbox._textbox.tag_configure("ERROR", foreground="red")
-
     def get_filename(self, filepath):
         return os.path.basename(filepath)
 
@@ -134,6 +127,25 @@ class Dashboard():
                                          command=self.root.M_fileHandler.browse)
         
         self.browse_button.grid(row=0, column=2, sticky="w", padx=5)
+
+        divider = ctk.CTkFrame(self.sidebar_frame,
+                            height=1, # the height here means nothing, the border makes it visible   
+                            fg_color="#DEDEDE",
+                            border_width=1)   
+
+        # Use sticky="ew" to make it stretch horizontally (East-West)
+        divider.grid(row=3, column=0, sticky="ew", pady=(10,0))
+
+        # self.file_entry_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
+        # self.file_entry_frame.grid(row=2, column=0, sticky="nwe", padx=20, pady=(15,0))
+        # self.file_entry_frame.grid_columnconfigure(0, weight=1)
+
+        self.change_logs_frame = ctk.CTkFrame(self.sidebar_frame, 
+                                              fg_color="#F7F7F7",
+                                              border_width=1,
+                                              border_color="#e4e4e4")
+        self.change_logs_frame.grid(row=4,column=0,sticky="nwes",padx=5,pady=5)
+
 
     def _gui_createMain(self):
         self.main_frame = ctk.CTkFrame(self.root, fg_color="white")

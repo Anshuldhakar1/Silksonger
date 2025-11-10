@@ -9,3 +9,9 @@ __pycache__/
 .pytest_cache/
 .cache/
 
+build/
+dist/
+File Monitor.spec
+
+test_gui.py
+test_notification.py

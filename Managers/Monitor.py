@@ -75,6 +75,8 @@ class Monitor:
             self.monitor_thread.join(timeout=1.0)  # Wait up to 1 second for thread to finish
 
     def stop_monitoring(self):
+        if not self.is_monitoring:
+            return
         if not self._is_shutting_down:
             self.root.W_dashboard.main_log("Monitoring stopped", "STOP")
         if self.monitor_thread and self.monitor_thread.is_alive():

@@ -1,5 +1,6 @@
 from datetime import time
 import json
+import sys
 import customtkinter as ctk
 import os
 from PIL import Image
@@ -26,41 +27,53 @@ class AppManager(ctk.CTk):
         self.init_icons()
         self.init_window()
 
+    def resource_path(self,relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            # This is for --onefile mode
+            base_path = sys._MEIPASS
+        except Exception:
+            # This is for --onedir mode or running as a .py script
+            base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+
+        return os.path.join(base_path, relative_path)   
+
     def init_icons(self):
         self.app_icon = ctk.CTkImage(
-            light_image=Image.open("assets/icons/app_icon.png"),
-            dark_image=Image.open("assets/icons/app_icon.png"),
+            light_image=Image.open( self.resource_path("assets/icons/app_icon.png") ),
+            dark_image=Image.open(self.resource_path("assets/icons/app_icon.png")),
             size=(48, 48)
         )
         
         self.play_icon = ctk.CTkImage(
-            light_image=Image.open("assets/icons/pause-play.png"),
-            dark_image=Image.open("assets/icons/pause-play.png"),
+            light_image=Image.open(self.resource_path("assets/icons/pause-play.png")),
+            dark_image=Image.open(self.resource_path("assets/icons/pause-play.png")),
             size=(16, 16)
         )
         self.pause_icon = ctk.CTkImage(
-            light_image=Image.open("assets/icons/end.png"),
-            dark_image=Image.open("assets/icons/end.png"),
+            light_image=Image.open(self.resource_path("assets/icons/end.png")),
+            dark_image=Image.open(self.resource_path("assets/icons/end.png")),
             size=(16, 16)
         )
         self.browse_icon = ctk.CTkImage(
-            light_image=Image.open("assets/icons/folder.png"),
-            dark_image=Image.open("assets/icons/folder.png"),
+            light_image=Image.open(self.resource_path("assets/icons/folder.png")),
+            dark_image=Image.open(self.resource_path("assets/icons/folder.png")),
             size=(16,16)
         )
         self.history_icon = ctk.CTkImage(
-            light_image=Image.open("assets/icons/history.png"),
-            dark_image=Image.open("assets/icons/history.png"),
+            light_image=Image.open(self.resource_path("assets/icons/history.png")),
+            dark_image=Image.open(self.resource_path("assets/icons/history.png")),
             size=(16,16)
         )
         self.change_log_icon = ctk.CTkImage(
-            light_image=Image.open("assets/icons/document.png"),
-            dark_image=Image.open("assets/icons/document.png"),
+            light_image=Image.open(self.resource_path("assets/icons/document.png")),
+            dark_image=Image.open(self.resource_path("assets/icons/document.png")),
             size=(16,16)
         )
         self.star_icon = ctk.CTkImage(
-            light_image=Image.open("assets/icons/star.png"),
-            dark_image=Image.open("assets/icons/star.png"),
+            light_image=Image.open(self.resource_path("assets/icons/star.png")),
+            dark_image=Image.open(self.resource_path("assets/icons/star.png")),
             size=(16,16)
         )
 
