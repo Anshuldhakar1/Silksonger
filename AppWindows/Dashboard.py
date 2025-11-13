@@ -17,6 +17,8 @@ class Dashboard():
         self.root.M_fileHandler.set_callback(self.on_file_selected)
         self.dropdown_frame = None
 
+        self.logs = None
+
         self.main_log("Application started")
         self.add_simple_msg_to_log_entry("-------- Select a File to continue --------")
 
@@ -43,6 +45,8 @@ class Dashboard():
 
     def load_normal_logs(self):
         # print(self.logs[0]["adasdasdasd"])
+        if self.logs is None:
+            return
         for log_key in self.logs[0].keys():
             log = self.logs[0][log_key]
             timestamp = log['timestamp'][-8:]
@@ -55,6 +59,8 @@ class Dashboard():
             )
 
     def load_imp_logs(self):
+        if self.logs is None:
+            return
         for log_key in self.logs[1].keys():
             log = self.logs[1][log_key]
             timestamp = log['timestamp'][-8:]
@@ -85,6 +91,10 @@ class Dashboard():
         if self.root.M_monitor.is_target_set:
             if self.root.M_monitor.is_monitoring:
                 self.toggle_monitoring()
+            
+            self.load_normal_logs()   # we have to put this before releasing because this function checks if a target file is set or not
+            self.clear_log_entries()
+
             self.root.M_monitor.release_target()
 
             self.enable_monitor_btn(False)
@@ -94,9 +104,6 @@ class Dashboard():
 
             self.file_entry.delete(0, "end")
             self.file_entry.configure(placeholder_text="C:\\...\\save.dat")
-
-            self.load_normal_logs()
-            self.clear_log_entries()
             self.add_simple_msg_to_log_entry("-------- Select a File to continue --------")
         else:
             self.main_log("No File Selected!!", "ERROR")
@@ -219,9 +226,10 @@ class Dashboard():
             hover_color="#fee2e2",
             text_color="#801e1e",
         )
-        if not self.root.M_monitor.is_monitoring:
-            # print("No moniroting going on: from dashboard")
-            pass
+        # print(f"self.root.M_monitor.is_target_set [{self.root.M_monitor.is_target_set}]")
+        if not self.root.M_monitor.is_target_set:
+            print("No moniroting going on: from dashboard imp")
+            return
 
         # clear the logs 
         self.clear_log_entries()
@@ -238,9 +246,10 @@ class Dashboard():
             hover_color="#fee2e2",
             text_color="#801e1e",
         )
-        if not self.root.M_monitor.is_monitoring:
-            # print("No moniroting going on: from dashboard")
-            pass
+        # print(f"self.root.M_monitor.is_target_set [{self.root.M_monitor.is_target_set}]")
+        if not self.root.M_monitor.is_target_set:
+            print("No moniroting going on: from dashboard normal")
+            return
 
         # clear the logs 
         self.clear_log_entries()
@@ -263,7 +272,7 @@ class Dashboard():
         for widget in self.log_list_frame.winfo_children():
             widget.destroy()
 
-    def add_log_entry(self, timestamp, main_text, sub_text, log_id):
+    def add_log_entry(self, timestamp, main_text, sub_text, log_id="yo"):
         small_font = ctk.CTkFont(family="Helvetica", size=11, weight="normal")
         main_font = ctk.CTkFont(family="Helvetica", size=13, weight="bold")
         NORMAL_BG = "#EFEFEF"
@@ -324,6 +333,8 @@ class Dashboard():
     def _on_log_entry_click(self, log_id):
         print(f"Clicked log entry! ID: {log_id}")
         self.clear_log_entries()
+
+        # print(self.root.saved_notes)
         # You can add your logic here, e.g., show details for this log
 
     def _gui_createMain(self):

@@ -1,3 +1,4 @@
+import datetime
 from PIL import Image
 import customtkinter as ctk
 import os
@@ -21,13 +22,13 @@ class NotificationWindow(ctk.CTkToplevel):
 
         # --- Load Assets ---
         self.app_icon = ctk.CTkImage(
-            light_image=Image.open(self.resource_path("assets/icons/app_icon.png")),
-            dark_image=Image.open(self.resource_path("assets/icons/app_icon.png")),
+            light_image=Image.open(self.app_root.resource_path("assets/icons/app_icon.png")),
+            dark_image=Image.open(self.app_root.resource_path("assets/icons/app_icon.png")),
             size=(24, 24)
         )
         self.star_icon = ctk.CTkImage(
-            light_image=Image.open(self.resource_path("assets/icons/star.png")),
-            dark_image=Image.open(self.resource_path("assets/icons/star.png")),
+            light_image=Image.open(self.app_root.resource_path("assets/icons/star.png")),
+            dark_image=Image.open(self.app_root.resource_path("assets/icons/star.png")),
             size=(12, 12)
         )
 
@@ -251,16 +252,35 @@ class NotificationWindow(ctk.CTkToplevel):
             self.is_imp
         )
 
+        self.app_root.W_dashboard.add_log_entry(
+            timestamp=self.change_data['timestamp'],
+            main_text=note,
+            sub_text=f"{len(self.change_data['diff'])} changes detected",
+
+        )
+
+        # print(self.change_data)
+
+        new_data = {
+            "filepath": self.change_data['filepath'],
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "diff": self.change_data['diff'],
+        }
+
+        # print(self.app_root.saved_notes)
+
         msg = f"Saved change with note: \"{note}\""
         if self.is_imp:
             msg = f"Saved important change with note: \"{note}\""
         self.app_root.W_dashboard.main_log( msg, "SAVED" if not self.is_imp else "SAVED_IMP")
         self.app_root.W_dashboard.main_log("Waiting for changes...", "INFO")
 
+        self.app_root.M_monitor.start_monitoring()
         self.destroy()
 
     def discard_btn(self):
         self.app_root.W_dashboard.main_log("Waiting for changes...", "INFO")
+        self.app_root.M_monitor.start_monitoring()
         self.destroy()
 
     def _validate_notes(self, event=None):
