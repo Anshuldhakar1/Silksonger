@@ -12,6 +12,7 @@ from Windows.Change import ChangeWindow
 from Windows.Error import ErrorWindow
 
 from Modules.error import BaseAppError
+from Modules.Monitor import Monitor
 
 class AppManager(ctk.CTk):
     def __init__(self):
@@ -22,12 +23,13 @@ class AppManager(ctk.CTk):
             "normal": {},
             "important": {},
         }
-        self.is_file_selected = False
 
         self.DashboardWindow: Optional[DashboardWindow] = None
         self.NotificaitonWindow: Optional[NotificaitonWindow] = None
         self.ChangeWindow: Optional[ChangeWindow] = None
         self.ErrorWindow: Optional[ErrorWindow] = None
+
+        self.Monitor: Optional[Monitor] = None
 
         self.begin()    # asset and file managers are instantiated inside this func
 
@@ -43,6 +45,8 @@ class AppManager(ctk.CTk):
 
         self.title("File Monitor")
         self.geometry("920x560")
+
+        self.Monitor = Monitor(self)
         self.DashboardWindow = DashboardWindow(self)
 
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
@@ -69,9 +73,9 @@ class AppManager(ctk.CTk):
             )
 
     def file_selected(self, filepath: str):
+        self.Monitor.set_target_file(filepath)
+
         change_logs = self.FileManager.load_change_logs(filepath)
 
         self.changes["normal"] = change_logs[0]
         self.changes["important"] = change_logs[1]
-
-        self.is_file_selected = True

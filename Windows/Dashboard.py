@@ -1,8 +1,8 @@
-import datetime
+from datetime import datetime
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 import os
 
 if TYPE_CHECKING:
@@ -17,7 +17,7 @@ class DashboardWindow(ctk.CTk):
         self.app_manager.grid_columnconfigure(1, weight=1) # Main content
         self.app_manager.grid_rowconfigure(0, weight=1) 
 
-        self.selected_file_path = None
+        self.selected_file_path: Optional[str] = None
 
         self._gui_createSideBar()
         self._gui_createMain()
@@ -222,7 +222,7 @@ class DashboardWindow(ctk.CTk):
         """Helper function to add a message to the main output textbox."""
         self.output_textbox.configure(state="normal")
         
-        timestamp = f"{datetime.datetime.now():%H:%M:%S} "
+        timestamp = f"{datetime.now():%H:%M:%S} "
         self.output_textbox.insert("end", timestamp, "timestamp")
         
         if tag:
@@ -246,20 +246,32 @@ class DashboardWindow(ctk.CTk):
         self.main_log(f"Selected File {os.path.basename(filepath)}", "MODIFY")
         self.show_normal_changes()
 
-        # set the target for monitor
-        # log 
-        # enable the monitor buttons
-        # clear the log entries from the sidebar
-
     def release_file(self):
-        if self.app_manager.is_file_selected:
+        if self.selected_file_path:
+
+            if self.app_manager.Monitor.is_monitoring:
+                self.app_manager.Monitor.stop_monitoring()
+
+            # after file release the logs tab button should be selected
+            self.change_to_imp_btn.configure(
+            fg_color="#EFEFEF",
+            hover_color="#efefef",
+            text_color="#838383",
+            )
+            self.change_to_logs_btn.configure(
+                fg_color="#fee2e2",
+                hover_color="#fee2e2",
+                text_color="#801e1e",
+            )
+
             self.set_monitor_btn_state(False)
             self.set_stop_btn_state(False)
 
             self.clear_log_entries()
-            self.app_manager.is_file_selected=False
-
             self.main_log(f"Released File {os.path.basename(self.selected_file_path)}", "MODIFY")
+            
+            self.selected_file_path = None
+            self.app_manager.Monitor.release_target()
 
             self.file_entry.delete(0, "end")
             self.file_entry.configure(placeholder_text="C:\\...\\save.dat")
@@ -292,7 +304,13 @@ class DashboardWindow(ctk.CTk):
         text_frame = ctk.CTkFrame(entry_frame, fg_color="transparent")
         text_frame.pack(side="left", fill="both", expand=True, pady=2, padx=(0, 5))
 
-        timestamp_label = ctk.CTkLabel(text_frame, text=timestamp,
+        original_format = "%Y-%m-%d %H:%M:%S"
+        new_format = "%d-%m-%y | %I:%M:%S %p"
+
+        dt_object = datetime.strptime(timestamp, original_format)
+        converted_timestamp = dt_object.strftime(new_format)
+
+        timestamp_label = ctk.CTkLabel(text_frame, text=converted_timestamp,
                                        font=small_font, text_color="gray",
                                        anchor="w")
         timestamp_label.place(x=0, y=0) 
@@ -347,7 +365,7 @@ class DashboardWindow(ctk.CTk):
         label.pack(padx=5, pady=5)
 
     def show_normal_changes(self):
-        if not self.app_manager.is_file_selected:
+        if not self.selected_file_path:
             return
         self.clear_log_entries()    
 
@@ -357,7 +375,7 @@ class DashboardWindow(ctk.CTk):
 
         for log_key in self.app_manager.changes["normal"].keys():
             log = self.app_manager.changes["normal"][log_key]
-            timestamp = log['timestamp'][-8:]
+            timestamp = log['timestamp']
             num_diffs = len(log['diff'])
             self.add_log_entry(
                 timestamp=timestamp,
@@ -367,7 +385,7 @@ class DashboardWindow(ctk.CTk):
             )   
 
     def show_imp_changes(self):
-        if not self.app_manager.is_file_selected:
+        if not self.selected_file_path:
             return
         self.clear_log_entries()  
 
@@ -377,7 +395,7 @@ class DashboardWindow(ctk.CTk):
 
         for log_key in self.app_manager.changes["important"].keys():
             log = self.app_manager.changes["important"][log_key]
-            timestamp = log['timestamp'][-8:]
+            timestamp = log['timestamp']
             num_diffs = len(log['diff'])
             self.add_log_entry(
                 timestamp=timestamp,
@@ -451,7 +469,7 @@ class DashboardWindow(ctk.CTk):
         self.close_dropdown()
 
     def open_last_file(self):
-        if self.app_manager.is_file_selected:  # do not open recents if a file is selected
+        if self.selected_file_path:  # do not open recents if a file is selected
             return   # todo add code to stop monitoring and stopping it, then opening this new file
         
         recent_files = self.app_manager.FileManager.get_recent_files()
@@ -513,7 +531,7 @@ class DashboardWindow(ctk.CTk):
             )
 
     def logs_btn_clicked(self):
-        if not self.app_manager.is_file_selected:
+        if not self.selected_file_path:
             return
 
         self.change_to_imp_btn.configure(
@@ -530,7 +548,7 @@ class DashboardWindow(ctk.CTk):
         self.show_normal_changes()
 
     def imp_btn_clicked(self):
-        if not self.app_manager.is_file_selected:
+        if not self.selected_file_path:
             return
 
         self.change_to_logs_btn.configure(
@@ -547,5 +565,16 @@ class DashboardWindow(ctk.CTk):
         self.show_imp_changes()
 
     def toggle_monitoring(self):
-        pass
+        if not self.selected_file_path:
+            return
+
+        if not self.app_manager.Monitor.is_monitoring:
+            self.app_manager.Monitor.start_monitoring()
+            self.status_indicator_label.configure(text="\u25cf Monitoring Active", text_color="#059669")
+            self.main_log(f"Started monitoring {os.path.basename(self.selected_file_path)}", "START")
+            self.main_log("Waiting for changes ...", "INFO")
+        else:
+            self.app_manager.Monitor.stop_monitoring()
+            self.status_indicator_label.configure(text="\u25cf Not Monitoring", text_color="#DC2626")
+            self.main_log("Monitoring stopped", "STOP")
 
