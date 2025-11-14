@@ -248,15 +248,16 @@ class DashboardWindow(ctk.CTk):
 
     def release_file(self):
         if self.selected_file_path:
-
+           
             if self.app_manager.Monitor.is_monitoring:
                 self.app_manager.Monitor.stop_monitoring()
+                self.status_indicator_label.configure(text="\u25cf Not Monitoring", text_color="#DC2626")
 
             # after file release the logs tab button should be selected
             self.change_to_imp_btn.configure(
-            fg_color="#EFEFEF",
-            hover_color="#efefef",
-            text_color="#838383",
+                fg_color="#EFEFEF",
+                hover_color="#efefef",
+                text_color="#838383",
             )
             self.change_to_logs_btn.configure(
                 fg_color="#fee2e2",
@@ -577,4 +578,3 @@ class DashboardWindow(ctk.CTk):
             self.app_manager.Monitor.stop_monitoring()
             self.status_indicator_label.configure(text="\u25cf Not Monitoring", text_color="#DC2626")
             self.main_log("Monitoring stopped", "STOP")
-

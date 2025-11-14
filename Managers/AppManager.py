@@ -36,7 +36,6 @@ class AppManager(ctk.CTk):
     def begin(self):
 
         self.AssetManager: AssetManager = AssetManager()
-
         try:
             self.FileManager: FileManager = FileManager()
         except GamePathNotFoundError as err:
@@ -46,7 +45,7 @@ class AppManager(ctk.CTk):
         self.title("File Monitor")
         self.geometry("920x560")
 
-        self.Monitor = Monitor(self)
+        self.Monitor = Monitor(self, change_callback=self.handle_change_detected)
         self.DashboardWindow = DashboardWindow(self)
 
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
@@ -79,3 +78,8 @@ class AppManager(ctk.CTk):
 
         self.changes["normal"] = change_logs[0]
         self.changes["important"] = change_logs[1]
+
+    def handle_change_detected(self):
+        print("change detected")
+        pass
+
