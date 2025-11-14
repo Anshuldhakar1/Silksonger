@@ -42,7 +42,7 @@ class AppManager(ctk.CTk):
 
         self.title("File Monitor")
         self.geometry("920x560")
-        self.DashboardWindow = DashboardWindow()
+        self.DashboardWindow = DashboardWindow(self)
 
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
 
