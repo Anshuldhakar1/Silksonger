@@ -17,9 +17,9 @@ class AssetManager():
         self._icons: Dict[IconName, ctk.CTkImage] = {}
         self._load_icons()
 
-    def get_icon(self, icon: IconName) -> ctk.CTkImage:
+    def get_icon(self, icon_name: IconName) -> ctk.CTkImage:
         """Fetches an icon by its name."""
-        return self._icons[icon]
+        return self._icons[icon_name]
     
     def _path(self, relative_path: str) -> str:
         """ Get absolute path to resource, works for dev and for PyInstaller """

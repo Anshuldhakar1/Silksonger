@@ -1,8 +1,11 @@
 import customtkinter as ctk
-from typing import Optional, Literal
+from typing import Optional
+import traceback  # traceback.print_exc() pritns the stack trace
+import sys
+
+from Managers.FileManager import FileManager, GamePathNotFoundError
 
 from Managers.AssetManager import AssetManager
-from Managers.FileManager import FileManager
 from Windows.Dashboard import DashboardWindow
 from Windows.Notification import NotificaitonWindow
 from Windows.Change import ChangeWindow
@@ -24,12 +27,16 @@ class AppManager(ctk.CTk):
         self.begin()    # asset and file managers are instantiated inside this func
 
     def begin(self):
+        try:
+            self.FileManager: FileManager = FileManager()
+        except GamePathNotFoundError as err:
+            traceback.print_exc()  # prints stack trace
+            print("\n"+err)
+
         self.title("File Monitor")
         self.geometry("920x560")
 
         self.AssetManager: AssetManager = AssetManager()
-        self.FileManager: FileManager = FileManager()
-
         self.DashboardWindow = DashboardWindow()
 
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
