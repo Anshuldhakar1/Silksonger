@@ -31,7 +31,7 @@ class AppManager(ctk.CTk):
         self.FileManager: FileManager = FileManager()
 
         self.DashboardWindow = DashboardWindow()
-        
+
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
 
     def _on_closing(self):
