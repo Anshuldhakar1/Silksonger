@@ -22,6 +22,7 @@ class AppManager(ctk.CTk):
             "normal": {},
             "important": {},
         }
+        self.is_file_selected = False
 
         self.DashboardWindow: Optional[DashboardWindow] = None
         self.NotificaitonWindow: Optional[NotificaitonWindow] = None
@@ -66,3 +67,11 @@ class AppManager(ctk.CTk):
                 error=error, 
                 asset_manager=self.AssetManager,
             )
+
+    def file_selected(self, filepath: str):
+        change_logs = self.FileManager.load_change_logs(filepath)
+
+        self.changes["normal"] = change_logs[0]
+        self.changes["important"] = change_logs[1]
+
+        self.is_file_selected = True

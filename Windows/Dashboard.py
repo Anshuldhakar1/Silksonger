@@ -1,6 +1,9 @@
+import datetime
 import customtkinter as ctk
-
+import tkinter as tk
+from tkinter import filedialog
 from typing import TYPE_CHECKING
+import os
 
 if TYPE_CHECKING:
     from Managers.AppManager import AppManager
@@ -14,9 +17,15 @@ class DashboardWindow(ctk.CTk):
         self.app_manager.grid_columnconfigure(1, weight=1) # Main content
         self.app_manager.grid_rowconfigure(0, weight=1) 
 
+        self.selected_file_path = None
+
         self._gui_createSideBar()
         self._gui_createMain()
         
+        self.main_log("Application started")
+        self.add_simple_msg_to_log_entry("-------- Select a File to continue --------")
+      
+    # ------------------ GUI ------------------  
     def _gui_createSideBar(self):
         self.sidebar_frame = ctk.CTkFrame(self.app_manager, width=300, corner_radius=0, fg_color="white")
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
@@ -208,20 +217,335 @@ class DashboardWindow(ctk.CTk):
         self.output_textbox._textbox.tag_configure("INFO", foreground="gray")
         self.output_textbox._textbox.tag_configure("ERROR", foreground="red")
 
+    # ------------------ main app ------------------  
+    def main_log(self, message: str, tag: str = None):
+        """Helper function to add a message to the main output textbox."""
+        self.output_textbox.configure(state="normal")
+        
+        timestamp = f"{datetime.datetime.now():%H:%M:%S} "
+        self.output_textbox.insert("end", timestamp, "timestamp")
+        
+        if tag:
+            self.output_textbox.insert("end", f"{tag:8} ", tag) # 8 chars padding
+        
+        self.output_textbox.insert("end", f"{message}\n")
+        self.output_textbox.see("end")
+        self.output_textbox.configure(state="disabled")
+
+    def on_file_selected(self, filepath: str):
+        
+        self.file_entry.delete(0, "end")
+        self.file_entry.insert(0, os.path.basename(filepath))
+
+        self.selected_file_path = filepath
+        self.app_manager.file_selected(filepath)
+
+        self.set_monitor_btn_state(True)
+        self.set_stop_btn_state(True)
+        
+        self.main_log(f"Selected File {os.path.basename(filepath)}", "MODIFY")
+        self.show_normal_changes()
+
+        # set the target for monitor
+        # log 
+        # enable the monitor buttons
+        # clear the log entries from the sidebar
+
+    def release_file(self):
+        if self.app_manager.is_file_selected:
+            self.set_monitor_btn_state(False)
+            self.set_stop_btn_state(False)
+
+            self.clear_log_entries()
+            self.app_manager.is_file_selected=False
+
+            self.main_log(f"Released File {os.path.basename(self.selected_file_path)}", "MODIFY")
+
+            self.file_entry.delete(0, "end")
+            self.file_entry.configure(placeholder_text="C:\\...\\save.dat")
+            self.add_simple_msg_to_log_entry("-------- Select a File to continue --------")
+        else:
+            self.main_log("No File Selected!!", "ERROR")
+    
+    # ------------------ Sidebar LOGS ------------------
+    def add_log_entry(self, timestamp, main_text, sub_text, log_id="yo"):
+        small_font = ctk.CTkFont(family="Helvetica", size=11, weight="normal")
+        main_font = ctk.CTkFont(family="Helvetica", size=13, weight="bold")
+        NORMAL_BG = "#EFEFEF"
+        HOVER_BG = "#E5E5E5"
+
+        entry_frame = ctk.CTkFrame(self.log_list_frame, 
+                                   fg_color=NORMAL_BG, 
+                                   cursor="hand2",
+                                   height=70) 
+        entry_frame.pack(fill="x", pady=(5, 0), padx=5)
+        # Stop pack from shrinking the frame
+        entry_frame.pack_propagate(False) 
+        # vertical line
+        v_line = ctk.CTkFrame(entry_frame, 
+                              width=3, 
+                              fg_color="#C8C8C8", 
+                              corner_radius=2)
+        v_line.pack(side="left", fill="y", padx=(5, 10), pady=10)
+
+        # 3. Create an encompassing frame for the text
+        text_frame = ctk.CTkFrame(entry_frame, fg_color="transparent")
+        text_frame.pack(side="left", fill="both", expand=True, pady=2, padx=(0, 5))
+
+        timestamp_label = ctk.CTkLabel(text_frame, text=timestamp,
+                                       font=small_font, text_color="gray",
+                                       anchor="w")
+        timestamp_label.place(x=0, y=0) 
+
+        main_label = ctk.CTkLabel(text_frame, text=main_text,
+                                  font=main_font, text_color="black",
+                                  anchor="w")
+        main_label.place(x=0, y=18) 
+
+        sub_label = ctk.CTkLabel(text_frame, text=sub_text,
+                                 font=small_font, text_color="gray",
+                                 anchor="w")
+        sub_label.place(x=0, y=40)
+
+        def _on_click(event):
+            self._on_log_entry_click(log_id) 
+
+        def _on_enter(event):
+            entry_frame.configure(fg_color=HOVER_BG) 
+            text_frame.configure(fg_color=HOVER_BG) 
+            
+        def _on_leave(event):
+            entry_frame.configure(fg_color=NORMAL_BG)
+            text_frame.configure(fg_color=NORMAL_BG)
+
+        # Bind functions
+        widgets_to_bind = [entry_frame, v_line, text_frame, timestamp_label, main_label, sub_label]
+        for widget in widgets_to_bind:
+            widget.bind("<Button-1>", _on_click)
+            widget.bind("<Enter>", _on_enter)
+            widget.bind("<Leave>", _on_leave)
+
+    def _on_log_entry_click(self, log_id):
+        print(f"Clicked log entry! ID: {log_id}")
+        self.clear_log_entries()
+
+    def clear_log_entries(self):
+        for widget in self.log_list_frame.winfo_children():
+            widget.destroy()
+
+    def add_simple_msg_to_log_entry(self, msg):
+        NORMAL_BG = "transparent"
+        entry_frame = ctk.CTkFrame(self.log_list_frame, 
+                                   fg_color=NORMAL_BG, 
+                                   height=70) 
+        entry_frame.pack(fill="x", pady=(5, 0), padx=5)
+
+        label = ctk.CTkLabel(entry_frame,
+            text=msg,
+            text_color="#949494",
+        )
+        label.pack(padx=5, pady=5)
+
+    def show_normal_changes(self):
+        if not self.app_manager.is_file_selected:
+            return
+        self.clear_log_entries()    
+
+        if not self.app_manager.changes["normal"]:
+            self.add_simple_msg_to_log_entry("-------- No Changes Saved --------")
+            return
+
+        for log_key in self.app_manager.changes["normal"].keys():
+            log = self.app_manager.changes["normal"][log_key]
+            timestamp = log['timestamp'][-8:]
+            num_diffs = len(log['diff'])
+            self.add_log_entry(
+                timestamp=timestamp,
+                main_text=log_key, 
+                sub_text=f"{num_diffs} changes detected",
+                log_id=log_key
+            )   
+
+    def show_imp_changes(self):
+        if not self.app_manager.is_file_selected:
+            return
+        self.clear_log_entries()  
+
+        if not self.app_manager.changes["important"]:
+            self.add_simple_msg_to_log_entry("-------- No Changes Saved --------")
+            return
+
+        for log_key in self.app_manager.changes["important"].keys():
+            log = self.app_manager.changes["important"][log_key]
+            timestamp = log['timestamp'][-8:]
+            num_diffs = len(log['diff'])
+            self.add_log_entry(
+                timestamp=timestamp,
+                main_text=log_key, 
+                sub_text=f"{num_diffs} changes detected",
+                log_id=log_key
+            )                        
+
+    # ------------------ File browsing  ------------------ 
+    def show_recent_files_menu(self, widget):
+        if self.dropdown_frame:
+            self.close_dropdown()
+            return 
+            
+        recent_files = self.app_manager.FileManager.get_recent_files()
+        if not recent_files:
+            return
+        
+        dropdown_width = widget.winfo_width() 
+            
+        self.dropdown_frame = ctk.CTkFrame(
+            self.app_manager,
+            fg_color="white",
+            border_width=1,
+            border_color="#D2D2D2",
+            width=dropdown_width, 
+            height=len(recent_files) * 32  
+        )
+        
+        x = widget.winfo_rootx() - self.app_manager.winfo_rootx()
+        y = widget.winfo_rooty() - self.app_manager.winfo_rooty() + widget.winfo_height() + 2 # Place *below*
+        self.dropdown_frame.place(x=x, y=y)
+        
+        # Add recent files as buttons
+        import os
+        for i, filepath in enumerate(recent_files):
+            btn = ctk.CTkButton(
+                self.dropdown_frame,
+                text=os.path.basename(filepath),
+                fg_color="transparent",
+                text_color="black",
+                hover_color="#f0f0f0",
+                anchor="w",
+                height=30,
+                width=dropdown_width - 2,  
+                command=lambda f=filepath: self.on_file_selected(f)
+            )
+            btn.place(x=1, y=1 + (i * 31))
+
+        self.dropdown_frame.bind("<FocusOut>", self.on_dropdown_focus_out)
+        self.dropdown_frame.focus_set()
+    
+    def close_dropdown(self):
+        if self.dropdown_frame:
+            self.dropdown_frame.destroy()
+            self.dropdown_frame = None
+
+    def on_dropdown_focus_out(self, event):
+        self.app_manager.after(50, self._check_focus)
+
+    def _check_focus(self):
+        if not self.dropdown_frame:
+            return 
+
+        new_focus_widget = self.app_manager.focus_get()
+        master = new_focus_widget
+        while master:
+            if master == self.dropdown_frame:
+                return 
+            master = getattr(master, 'master', None)
+        self.close_dropdown()
+
     def open_last_file(self):
-        pass
+        if self.app_manager.is_file_selected:  # do not open recents if a file is selected
+            return   # todo add code to stop monitoring and stopping it, then opening this new file
+        
+        recent_files = self.app_manager.FileManager.get_recent_files()
+
+        menu = tk.Menu(self.app_manager, tearoff=0)
+
+        for filepath in recent_files:
+            filename = os.path.basename(filepath)
+            menu.add_command(
+                label=filename,
+                command=lambda f=filepath: self.on_file_selected(f)
+            )
+
+        widget = self.history_button 
+        x = widget.winfo_rootx() - 100
+        y = widget.winfo_rooty() + widget.winfo_height() + 2 
+
+        try:
+            menu.tk_popup(x, y)
+        finally:
+            menu.grab_release()
 
     def browse(self):
-        pass
+        filepath = filedialog.askopenfilename(
+            initialdir=self.app_manager.FileManager.target_directory,
+            title="Select Save File",
+            filetypes=[("DAT files", "*.dat"), ("All files", "*.*")]
+        )
+        if filepath:
+            self.app_manager.FileManager.file_selected(filepath)
+            # if self.file_selected_callback:
+            #     self.file_selected_callback(filename)
+
+    # ------------------ Buttons  ------------------ 
+    def set_monitor_btn_state(self, state: bool):
+        if state:
+            self.monitor_toggle_button.configure(
+                state="normal",
+                fg_color="#dedede",      
+                hover_color="#d1d1d1"    
+            )
+        else:
+            self.monitor_toggle_button.configure(
+                state="disabled",
+                fg_color="#bdbdbd",      
+                hover_color="#bdbdbd"    
+            )
+
+    def set_stop_btn_state(self, state: bool):
+        if state:
+            self.stop_button.configure(
+                state="normal",
+                fg_color="#EF4444",      
+            )
+        else:
+            self.stop_button.configure(
+                state="disabled",
+                fg_color="#DC2626",      
+            )
 
     def logs_btn_clicked(self):
-        pass
+        if not self.app_manager.is_file_selected:
+            return
+
+        self.change_to_imp_btn.configure(
+            fg_color="#EFEFEF",
+            hover_color="#efefef",
+            text_color="#838383",
+        )
+        self.change_to_logs_btn.configure(
+            fg_color="#fee2e2",
+            hover_color="#fee2e2",
+            text_color="#801e1e",
+        )
+
+        self.show_normal_changes()
 
     def imp_btn_clicked(self):
-        pass
+        if not self.app_manager.is_file_selected:
+            return
+
+        self.change_to_logs_btn.configure(
+            fg_color="#EFEFEF",
+            hover_color="#efefef",
+            text_color="#838383",
+        )
+        self.change_to_imp_btn.configure(
+            fg_color="#fee2e2",
+            hover_color="#fee2e2",
+            text_color="#801e1e",
+        )
+
+        self.show_imp_changes()
 
     def toggle_monitoring(self):
         pass
 
-    def release_file(self):
-        pass
