@@ -4,11 +4,14 @@ import traceback  # traceback.print_exc() pritns the stack trace
 import sys
 
 from Managers.FileManager import FileManager, GamePathNotFoundError
-
 from Managers.AssetManager import AssetManager
+
 from Windows.Dashboard import DashboardWindow
 from Windows.Notification import NotificaitonWindow
 from Windows.Change import ChangeWindow
+from Windows.Error import ErrorWindow
+
+from Modules.error import BaseAppError
 
 class AppManager(ctk.CTk):
     def __init__(self):
@@ -23,20 +26,22 @@ class AppManager(ctk.CTk):
         self.DashboardWindow: Optional[DashboardWindow] = None
         self.NotificaitonWindow: Optional[NotificaitonWindow] = None
         self.ChangeWindow: Optional[ChangeWindow] = None
+        self.ErrorWindow: Optional[ErrorWindow] = None
 
         self.begin()    # asset and file managers are instantiated inside this func
 
     def begin(self):
+
+        self.AssetManager: AssetManager = AssetManager()
+
         try:
             self.FileManager: FileManager = FileManager()
         except GamePathNotFoundError as err:
             traceback.print_exc()  # prints stack trace
-            print("\n"+err)
+            self._error_popup(err)
 
         self.title("File Monitor")
         self.geometry("920x560")
-
-        self.AssetManager: AssetManager = AssetManager()
         self.DashboardWindow = DashboardWindow()
 
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
@@ -53,3 +58,11 @@ class AppManager(ctk.CTk):
         # Close window
         self.quit()
         self.destroy()
+
+    def _error_popup(self, error: BaseAppError):
+        if self.ErrorWindow is None or not self.ErrorWindow.winfo_exists():
+            self.ErrorWindow = ErrorWindow(
+                self, 
+                error=error, 
+                asset_manager=self.AssetManager,
+            )

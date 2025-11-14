@@ -1,9 +1,18 @@
 import json
 import os
+from Modules.error import BaseAppError
 
-class GamePathNotFoundError(Exception):
+class GamePathNotFoundError(BaseAppError):
     """Exception raised when the expected game directory is not found."""
-    pass
+    def __init__(self, msg: str):
+        # 1. Define the friendly info
+        dev_msg = msg
+        user_msg = ("The game directory could not be found.\n"
+                    "Please ensure the game is installed and "
+                    "has been run at least once.")
+        title = "Game Not Found"
+
+        super().__init__(dev_message=dev_msg, user_message=user_msg, title=title, app_close=True)
 
 class FileManager():
     def __init__(self):
@@ -16,8 +25,7 @@ class FileManager():
             "Hollow Knight Silksong"
         )
 
-        if os.path.exists(self.target_directory):
-        # if not os.path.exists(self.target_directory):
+        if not os.path.exists(self.target_directory):
             raise GamePathNotFoundError(
                 f"Game path not found. The directory does not exist:\n{self.target_directory}"
             )

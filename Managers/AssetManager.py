@@ -8,7 +8,7 @@ IconName = Literal[
     "app_icon", "play_icon",
     "pause_icon", "browse_icon",
     "history_icon", "change_log_icon",
-    "star_icon"
+    "star_icon", "danger_icon"
 ]
 
 class AssetManager():
@@ -70,4 +70,9 @@ class AssetManager():
             light_image=Image.open(self._path("assets/icons/star.png")),
             dark_image=Image.open(self._path("assets/icons/star.png")),
             size=(16,16)
+        )
+        self._icons["danger_icon"] = ctk.CTkImage(
+            light_image=Image.open(self._path("assets/icons/danger2.png")),
+            dark_image=Image.open(self._path("assets/icons/danger2.png")),
+            size=(56,56)
         )
