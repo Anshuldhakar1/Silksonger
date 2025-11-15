@@ -1,8 +1,10 @@
 import json
 import os
+import time
 from Modules.error import BaseAppError
 import traceback  # traceback.print_exc() pritns the stack trace
-from typing import List
+from typing import List, Dict, Callable
+from Modules.SaveDecoder import decrypt_hollow_knight_save
 
 class GamePathNotFoundError(BaseAppError):
     """Exception raised when the expected game directory is not found."""
@@ -113,4 +115,29 @@ class FileManager():
 
         return logs
 
+    def load_save(self, filepath: str, logger: Callable) -> Dict:
+        max_retries = 5
+        retry_delay = 0.2
+
+        for attempt in range(max_retries):
+            try:
+                with open(filepath, 'rb') as f:
+                    encrypted_data = f.read()
+                
+                if not encrypted_data:
+                    logger(f"File is empty, retrying... ({attempt+1}/{max_retries})", "ERROR")
+                    time.sleep(retry_delay)
+                    continue
+
+                decrypted_json = decrypt_hollow_knight_save(encrypted_data)
+                return json.loads(decrypted_json)
+            except (PermissionError, OSError):
+                # File is locked, retry after delay
+                time.sleep(retry_delay)
+            except Exception as e:
+                logger(f"Error reading file: {e}", "ERROR")
+                time.sleep(retry_delay)
+
+        logger("Failed to read file after multiple retries", "ERROR")
+        return {}
 

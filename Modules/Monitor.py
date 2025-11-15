@@ -63,7 +63,6 @@ class MonitorThread(threading.Thread):
             self._log_safe(f"Error setting initial baseline: {e}", "ERROR")
             return 
 
-        loop_count = 0
         while not self._stop_event.is_set():
             try:
                 if self.has_changed():
@@ -131,6 +130,10 @@ class Monitor:
             return
         self.target_file = None
 
+    def force_update_baseline(self):
+        if self.monitor_thread is not None:
+            self.monitor_thread.update_baseline()
+
     def start_monitoring(self):
         if self.is_monitoring:
             return
@@ -158,3 +161,11 @@ class Monitor:
         
         self.monitor_thread = None
         self.is_monitoring = False
+
+    def cleanup(self):
+        if self.monitor_thread is None:
+            return
+        self.stop_monitoring()
+        if self.monitor_thread and self.monitor_thread.is_alive():
+            self.monitor_thread.running = False
+            self.monitor_thread.join(timeout=1.0) 

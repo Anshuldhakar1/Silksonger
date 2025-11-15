@@ -1,7 +1,9 @@
+import os
 import customtkinter as ctk
-from typing import Optional
-import traceback  # traceback.print_exc() pritns the stack trace
-import sys
+from typing import Optional, Dict
+import traceback # traceback.print_exc() pritns the stack trace
+import dictdiffer  
+from datetime import datetime  
 
 from Managers.FileManager import FileManager, GamePathNotFoundError
 from Managers.AssetManager import AssetManager
@@ -13,6 +15,7 @@ from Windows.Error import ErrorWindow
 
 from Modules.error import BaseAppError
 from Modules.Monitor import Monitor
+from Modules.types import ChangeDataType
 
 class AppManager(ctk.CTk):
     def __init__(self):
@@ -23,6 +26,8 @@ class AppManager(ctk.CTk):
             "normal": {},
             "important": {},
         }
+        self.previous_data: Optional[Dict] = None
+        self.selected_filepath: Optional[str] = None
 
         self.DashboardWindow: Optional[DashboardWindow] = None
         self.NotificaitonWindow: Optional[NotificaitonWindow] = None
@@ -34,7 +39,6 @@ class AppManager(ctk.CTk):
         self.begin()    # asset and file managers are instantiated inside this func
 
     def begin(self):
-
         self.AssetManager: AssetManager = AssetManager()
         try:
             self.FileManager: FileManager = FileManager()
@@ -52,12 +56,12 @@ class AppManager(ctk.CTk):
 
     def _on_closing(self):
         # Log shutdown
-        # if self.W_dashboard:
-        #     self.W_dashboard.main_log("Application shutting down...", "INFO")
+        if self.DashboardWindow:
+            self.DashboardWindow.main_log("Application shutting down...", "INFO")
         
         # # Cleanup background tasks
-        # if self.M_monitor:
-        #     self.M_monitor.cleanup()
+        if self.Monitor:
+            self.Monitor.cleanup()
         
         # Close window
         self.quit()
@@ -75,11 +79,49 @@ class AppManager(ctk.CTk):
         self.Monitor.set_target_file(filepath)
 
         change_logs = self.FileManager.load_change_logs(filepath)
+        self.previous_data = self.FileManager.read_save(
+            filepath, 
+            logger=self.DashboardWindow.main_log
+        )
 
         self.changes["normal"] = change_logs[0]
         self.changes["important"] = change_logs[1]
 
-    def handle_change_detected(self):
-        print("change detected")
-        pass
+        self.selected_filepath = filepath
 
+    def handle_change_detected(self):
+        try:
+            current_data = self.FileManager.read_save(
+                self.selected_filepath, 
+                logger=self.DashboardWindow.main_log
+            )
+
+            if not current_data:
+                self.DashboardWindow.main_log("Something went wrong reading the current save","ERROR")
+                return
+            
+            diff = list(dictdiffer.diff(self.previous_data, current_data))
+
+            if diff:
+                change_data: ChangeDataType = {
+                    "filepath": self.selected_filepath, # this is str
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), # this is str
+                    "diff": diff, # this is list
+                }
+                
+                self.DashboardWindow.main_log(f"Found {len(diff)} changes in {os.path.basename(self.selected_filepath)}", "MODIFY")
+                # self.show_notification(change_data) 
+                print(change_data)
+
+                self.previous_data = current_data
+            else:
+                self.DashboardWindow.main_log("Change detected, but no data diff found (e.g., whitespace change)", "INFO")
+        except Exception as e:
+            self.DashboardWindow.main_log(f"Error processing changes: {e}", "ERROR")
+        finally:
+            # 4. CRITICAL: Update the detector's baseline.
+            self.Monitor.force_update_baseline()
+
+    def show_notificaiton(self, changeData: ChangeDataType):
+        if self.NotificaitonWindow is None or not self.NotificaitonWindow.winfo_exists():
+            self.NotificaitonWindow = NotificaitonWindow(self, input_change_data = changeData)
