@@ -1,6 +1,10 @@
-from typing import TypedDict, List
+from typing import TypedDict, List, Dict
 
 class ChangeDataType(TypedDict):
     filepath: str
     timestamp: str
     diff: List
+
+class ChangeNotesType(TypedDict):
+    normal: Dict
+    important: Dict

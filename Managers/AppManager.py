@@ -15,16 +15,16 @@ from Windows.Error import ErrorWindow
 
 from Modules.error import BaseAppError
 from Modules.Monitor import Monitor
-from Modules.types import ChangeDataType
+from Modules.types import ChangeDataType, ChangeNotesType
 
 class AppManager(ctk.CTk):
     def __init__(self):
         
         super().__init__()
 
-        self.changes = {  # raw changes?
+        self.changes: ChangeNotesType = {
             "normal": {},
-            "important": {},
+            "important": {}
         }
         self.previous_data: Optional[Dict] = None
         self.selected_filepath: Optional[str] = None

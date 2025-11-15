@@ -5,6 +5,7 @@ from Modules.error import BaseAppError
 import traceback  # traceback.print_exc() pritns the stack trace
 from typing import List, Dict, Callable
 from Modules.SaveDecoder import decrypt_hollow_knight_save
+from Modules.types import ChangeNotesType
 
 class GamePathNotFoundError(BaseAppError):
     """Exception raised when the expected game directory is not found."""
@@ -96,7 +97,7 @@ class FileManager():
             except Exception as e:
                 print(f"Exception occured while creating file slot: {e}")
 
-    def load_change_logs(self, filepath: str) -> List:
+    def load_change_logs(self, filepath: str) -> List[ChangeNotesType]:
         filename = os.path.basename(filepath)
 
         normal_changes_path = os.path.join(self.saves_dir, filename.replace(".dat",".json"))
