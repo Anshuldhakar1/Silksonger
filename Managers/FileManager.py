@@ -5,7 +5,7 @@ from Modules.error import BaseAppError
 import traceback  # traceback.print_exc() pritns the stack trace
 from typing import List, Dict, Callable
 from Modules.SaveDecoder import decrypt_hollow_knight_save
-from Modules.types import ChangeNotesType
+from Modules.types import ChangeNotesType, ChangeDataType
 
 class GamePathNotFoundError(BaseAppError):
     """Exception raised when the expected game directory is not found."""
@@ -47,11 +47,11 @@ class FileManager():
             with open(self.recent_files_path, 'w') as file:  # instantiates the recent_files file
                 json.dump([], file, indent=4)
 
-    def file_selected(self, filepath: str) -> None:
+    def file_selected(self, filepath: str):
         self.save_to_recents(filepath)
         self.create_file_slot(filepath)
 
-    def save_to_recents(self, filepath: str) -> None:
+    def save_to_recents(self, filepath: str):
         try:
             recent_files = []
             with open(self.recent_files_path, 'r') as file:
@@ -76,23 +76,23 @@ class FileManager():
         except Exception as e:
             return []
     
-    def create_file_slot(self, filepath: str) -> None:
+    def create_file_slot(self, filepath: str):
         new_filename_normal = os.path.basename(filepath).replace(".dat",".json")
         new_filename_imp = os.path.basename(filepath).replace(".dat",".imp.json")
 
-        path_norm = os.path.join(self.data_dir,"files",new_filename_normal)
-        path_imp = os.path.join(self.data_dir,"files",new_filename_imp)
+        self.path_norm = os.path.join(self.data_dir,"files",new_filename_normal)
+        self.path_imp = os.path.join(self.data_dir,"files",new_filename_imp)
 
-        if not os.path.isfile(path_norm):
+        if not os.path.isfile(self.path_norm):
             try:
-                with open(path_norm,'w') as f:
+                with open(self.path_norm,'w') as f:
                     json.dump({},f)
             except Exception as e:
                 print(f"Exception occured while creating file slot: {e}")
 
-        if not os.path.isfile(path_imp):
+        if not os.path.isfile(self.path_imp):
             try:
-                with open(path_imp,'w') as f:
+                with open(self.path_imp,'w') as f:
                     json.dump({},f)
             except Exception as e:
                 print(f"Exception occured while creating file slot: {e}")
@@ -141,4 +141,28 @@ class FileManager():
 
         logger("Failed to read file after multiple retries", "ERROR")
         return {}
+
+    def save_change(self, note: str, changes: ChangeDataType, imp: bool):
+        try:
+            data = {}
+            if not imp:
+                if os.path.isfile(self.path_norm) and os.path.getsize(self.path_norm) > 0:
+                    with open(self.path_norm, 'r') as file:
+                        data = json.load(file)
+                    
+                    data[note] = changes
+                    with open(self.path_norm, 'w') as file:
+                        json.dump(data, file, indent=4)
+                    return
+            else:
+                if os.path.isfile(self.path_imp) and os.path.getsize(self.path_imp) > 0:
+                    with open(self.path_imp, 'r') as file:
+                        data = json.load(file)
+                    
+                    data[note] = changes
+                    with open(self.path_imp, 'w') as file:
+                        json.dump(data, file, indent=4)
+                    return
+        except Exception as e:
+            print(f"Error adding a new change. {e}")
 

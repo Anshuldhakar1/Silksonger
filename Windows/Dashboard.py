@@ -239,6 +239,7 @@ class DashboardWindow(ctk.CTk):
 
         self.selected_file_path = filepath
         self.app_manager.file_selected(filepath)
+        self.app_manager.FileManager.file_selected(filepath)
 
         self.set_monitor_btn_state(True)
         self.set_stop_btn_state(True)
@@ -281,7 +282,7 @@ class DashboardWindow(ctk.CTk):
             self.main_log("No File Selected!!", "ERROR")
     
     # ------------------ Sidebar LOGS ------------------
-    def add_log_entry(self, timestamp, main_text, sub_text, log_id="yo"):
+    def add_log_entry(self, timestamp:str, main_text:str, sub_text:str, log_id:str="yo"):
         small_font = ctk.CTkFont(family="Helvetica", size=11, weight="normal")
         main_font = ctk.CTkFont(family="Helvetica", size=13, weight="bold")
         NORMAL_BG = "#EFEFEF"
@@ -326,6 +327,18 @@ class DashboardWindow(ctk.CTk):
                                  anchor="w")
         sub_label.place(x=0, y=40)
 
+        # --- THIS IS THE MODIFIED SECTION ---
+    
+        existing_entries = self.log_list_frame.pack_slaves()
+
+        if existing_entries:
+            # If the list is not empty, pack the new frame BEFORE the first (top) widget
+            first_entry = existing_entries[0]
+            entry_frame.pack(fill="x", pady=(5, 0), padx=5, before=first_entry)
+        else:
+            # If the list is empty, just pack it normally
+            entry_frame.pack(fill="x", pady=(5, 0), padx=5)
+
         def _on_click(event):
             self._on_log_entry_click(log_id) 
 
@@ -346,7 +359,8 @@ class DashboardWindow(ctk.CTk):
 
     def _on_log_entry_click(self, log_id):
         print(f"Clicked log entry! ID: {log_id}")
-        self.clear_log_entries()
+        # self.clear_log_entries()
+        self.app_manager.sidelogs_test()
 
     def clear_log_entries(self):
         for widget in self.log_list_frame.winfo_children():
@@ -577,4 +591,4 @@ class DashboardWindow(ctk.CTk):
         else:
             self.app_manager.Monitor.stop_monitoring()
             self.status_indicator_label.configure(text="\u25cf Not Monitoring", text_color="#DC2626")
-            self.main_log("Monitoring stopped", "STOP")
+            # self.main_log("Monitoring stopped", "STOP")

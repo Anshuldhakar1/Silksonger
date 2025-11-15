@@ -79,7 +79,7 @@ class MonitorThread(threading.Thread):
                 self._stop_event.wait(self.POLLING_INTERVAL)
         
         try:
-            self._log_safe("MonitorThread Stopped.", "INFO")
+            self._log_safe("MonitorThread Stopped.", "STOP")
         except Exception as e:
             import traceback
             traceback.print_exc()
