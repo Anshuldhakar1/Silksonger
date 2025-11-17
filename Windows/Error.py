@@ -106,7 +106,7 @@ class ErrorWindow(ctk.CTkToplevel):
             footer_frame,
             text="Close",
             command=self._on_close,
-            fg_color="#D92626",  # Dark gray
+            fg_color="#D92626",  
             hover_color="#AD1F1F",
             text_color="white"
         )

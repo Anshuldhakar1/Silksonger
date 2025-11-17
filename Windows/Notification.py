@@ -22,7 +22,8 @@ class NotificaitonWindow(ctk.CTkToplevel):
         self.window_closed_callback = window_closed_callback
         self.icons = {
             "app_icon": asset_manager.get_icon("app_icon"),
-            "star_icon": asset_manager.get_icon("star_icon")
+            "star_icon": asset_manager.get_icon("star_icon"),
+            "arrow": asset_manager.get_icon("arrow_right"),
         }
         self.is_imp: bool = False
 
@@ -35,8 +36,8 @@ class NotificaitonWindow(ctk.CTkToplevel):
         # --- Main Window Configuration ---
         self.grid_rowconfigure(0, weight=0)  # Header row
         self.grid_rowconfigure(1, weight=1)  # Main content row
-        self.grid_columnconfigure(0, weight=2) # Diff column
-        self.grid_columnconfigure(1, weight=1) # Notes column
+        self.grid_columnconfigure(0, weight=1) # Diff column
+        self.grid_columnconfigure(1, weight=0) # Notes column
 
         self._gui_header()
         self._gui_main()
@@ -84,36 +85,50 @@ class NotificaitonWindow(ctk.CTkToplevel):
         self._gui_notes()
 
     def _gui_diff(self):
-        self.diff_frame = ctk.CTkFrame(self, fg_color="#ffffff", corner_radius=0)
-        self.diff_frame.grid(row=1, column=0, sticky="nsew", padx=(1, 0), pady=(0, 1))
-        self.diff_frame.grid_rowconfigure(1, weight=1)
+        # --- Corrected GUI Code ---
+
+        # This frame holds the title and the scrollable area
+        self.diff_frame = ctk.CTkFrame(self, fg_color="#ffffff", corner_radius=0,
+            border_width=1, border_color="#d4d4d4"   )
+        self.diff_frame.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
+
+        # Configure the frame grid
+        self.diff_frame.grid_rowconfigure(0, weight=0)    # Title row
+        self.diff_frame.grid_rowconfigure(1, weight=1)    # Scrollable area row
         self.diff_frame.grid_columnconfigure(0, weight=1)
 
+        base_dir = os.path.join(os.path.expanduser("~"), 
+            "AppData", 
+            "LocalLow", 
+            "Team Cherry")
+        text = self.raw_change_data['filepath'][len(base_dir):]
         self.diff_title_label = ctk.CTkLabel(
             self.diff_frame,
-            text=f"Changes in {self.raw_change_data['filepath'] if self.raw_change_data else 'Unknown'}",
-            font=ctk.CTkFont(family="Helvetica", size=13),
+            # text=f"Changes in {self.raw_change_data['filepath'] if self.raw_change_data else 'Unknown'}",
+            text=text,
+            font=ctk.CTkFont(family="Roboto Mono", size=14),
             text_color="#555",
             anchor="w"
         )
         self.diff_title_label.grid(row=0, column=0, sticky="ew", padx=20, pady=(10, 5))
-        
-        self.diff_textbox = ctk.CTkTextbox(
-            self.diff_frame, font=("Consolas", 13), fg_color="#f8f8f8",
-            wrap="none", border_width=1, border_color="#e0e0e0"
+
+        self.diff_scroll_frame = ctk.CTkScrollableFrame(
+            self.diff_frame,
+            fg_color="transparent",
+            border_width=1,
+            border_color="#cdcdcd"
         )
-        self.diff_textbox.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
-        
-        self.diff_textbox.tag_config("add", background="#e6ffed", foreground="#006d00")
-        self.diff_textbox.tag_config("del", background="#ffeef0", foreground="#b30000")
-        self.diff_textbox.tag_config("context", foreground="#555")
+        self.diff_scroll_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
 
         self._populate_diff()
 
     def _gui_notes(self):
         # --- 3. Sidebar Frame (Right Column) ---
-        self.sidebar_frame = ctk.CTkFrame(self, fg_color="#f8fafc", corner_radius=0)
-        self.sidebar_frame.grid(row=1, column=1, sticky="nsew", padx=(1, 1), pady=(0, 1))
+        self.sidebar_frame = ctk.CTkFrame(
+            self, fg_color="#f8fafc", corner_radius=0,
+            border_width=1, border_color="#d4d4d4"    
+        )
+        self.sidebar_frame.grid(row=1, column=1, sticky="nsew", padx=(0, 1), pady=(0, 1))
         self.sidebar_frame.grid_rowconfigure(1, weight=1)
         self.sidebar_frame.grid_columnconfigure(0, weight=1)
 
@@ -176,49 +191,95 @@ class NotificaitonWindow(ctk.CTkToplevel):
         self.discard_btn.grid(row=1, column=1, sticky="ew", padx=(3, 0))
 
     def _populate_diff(self):
-        self.diff_textbox.configure(state="normal")
-        self.diff_textbox.delete("1.0", "end")
-        
-        # Check for valid diff data
-        if not (self.raw_change_data and 'diff' in self.raw_change_data and len(self.raw_change_data['diff']) > 0):
-            self.diff_textbox.insert("end", "No diff data available.")
-            self.diff_textbox.configure(state="disabled")
-            return
+        for widget in self.diff_scroll_frame.winfo_children():
+            widget.destroy()
 
-        first_item = self.raw_change_data['diff'][0]
+        for i, item in enumerate(self.change['diff']):
 
-        if not isinstance(first_item, tuple):
-             self.diff_textbox.insert("end", "Error: Diff data is not in the expected tuple format.")
-             self.diff_textbox.configure(state="disabled")
-             return
-             
-        for item in self.raw_change_data['diff']:
-            if not isinstance(item, tuple):
-                self.diff_textbox.insert("end", f"Error: Invalid diff item: {item}\n", "del")
-                continue
+            operation, path, values = item
+            del_content, add_content = values
 
-            try:
-                operation, path, values = item
-                self.diff_textbox.insert("end", f"{path}\n", "context")
-                
-                if operation == "change":
-                    old_val, new_val = values
-                    self.diff_textbox.insert("end", f"  - {old_val}\n", "del")
-                    self.diff_textbox.insert("end", f"  + {new_val}\n", "add")
-                elif operation == "add":
-                   self.diff_textbox.insert("end", f"  + {values}\n", "add")
-                elif operation == "remove":
-                   self.diff_textbox.insert("end", f"  - {values}\n", "del")
-                    
-                else:
-                    self.diff_textbox.insert("end", f"  {values}\n", "context")
-                
-                self.diff_textbox.insert("end", "\n", "context")
-                    
-            except Exception as e:
-                self.diff_textbox.insert("end", f"Error processing tuple: {item} | {e}\n", "del")
-        
-        self.diff_textbox.configure(state="disabled") # Make read-only
+            change_frame = ctk.CTkFrame(
+                self.diff_scroll_frame,
+                fg_color="#f7f7f7" if i%2 == 0 else "#fcfcfc",
+            )
+            change_frame.pack( padx=15, pady=5, fill="x", expand=True)
+            change_frame.grid_columnconfigure(0, weight=1)
+
+            diff_font = ctk.CTkFont(family="Roboto Mono", size=13, weight="normal")
+            diff_font_bold = ctk.CTkFont(family="Roboto Mono", size=13, weight="bold")
+
+            title_frame = ctk.CTkFrame(
+                change_frame,
+                fg_color="transparent",
+            )
+            title_frame.grid( row=0, column=0, padx=5, pady=0, sticky="ew")
+
+            arrow_label = ctk.CTkLabel(
+                title_frame,
+                text="",
+                image=self.icons["arrow"]
+            )
+            arrow_label.grid(row=0, column=0, padx=0, pady=0)
+
+            title_label = ctk.CTkLabel(
+                title_frame,
+                text=f"{path}",
+                fg_color="transparent",
+                font=diff_font_bold,
+                text_color="#616161"
+            )
+            title_label.grid(row=0, column=1, padx=(3,0),sticky="w")
+
+            values_frame = ctk.CTkFrame(
+                change_frame,
+                fg_color="transparent",
+            )
+            values_frame.grid( row=1, column=0, padx=0, pady=0, sticky="ew")
+
+            def del_widget(col: int = 0):
+                values_frame.grid_columnconfigure(col, weight=0)
+                del_frame = ctk.CTkFrame(
+                    values_frame,
+                    fg_color="#fdecec",
+                    border_width=2,
+                    border_color="#656565",
+                )
+                del_frame.grid( row=0, column=col, padx=5, pady=0, sticky="w")
+
+                label_del = ctk.CTkLabel(
+                    del_frame,
+                    text=f" - {del_content} ",
+                    text_color="#b81818",
+                    font=diff_font,
+                )
+                label_del.pack(padx=5, pady=2)
+
+            def add_widget(col: int = 1):
+                values_frame.grid_columnconfigure(col, weight=0)
+                add_frame = ctk.CTkFrame(
+                    values_frame,
+                    fg_color="#e8f9ef",
+                    border_width=2,
+                    border_color="#656565",
+                )
+                add_frame.grid( row=0, column=col, padx=5, pady=0, sticky="w")
+
+                label_add = ctk.CTkLabel(
+                    add_frame,
+                    text=f" + {add_content} ",
+                    text_color="#117e3a",
+                    font=diff_font,
+                )
+                label_add.pack(padx=5, pady=2)
+
+            if operation == "change":
+                del_widget()
+                add_widget()
+            elif operation == "add":
+                add_widget(col=0)
+            elif operation == "del":
+                del_widget()
 
     def mark_important_btn(self):
         if not self.is_imp:
@@ -232,47 +293,12 @@ class NotificaitonWindow(ctk.CTkToplevel):
         note = self.notes_textbox.get("1.0", "end").strip()
         if not note:
             return
-        pass
-    
         self.window_save_callback(note = note, changes=self.raw_change_data, imp=self.is_imp)
         self.destroy()
 
-        # self.app_root.M_fileHandler.save_new_change(
-        #     self.change_data['filepath'],
-        #     note,
-        #     self.change_data,
-        #     self.is_imp
-        # )
-
-        # self.app_root.W_dashboard.add_log_entry(
-        #     timestamp=self.change_data['timestamp'],
-        #     main_text=note,
-        #     sub_text=f"{len(self.change_data['diff'])} changes detected",
-
-        # )
-
-        # # print(self.change_data)
-
-        # new_data = {
-        #     "filepath": self.change_data['filepath'],
-        #     "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        #     "diff": self.change_data['diff'],
-        # }
-
-        # # print(self.app_root.saved_notes)
-
-        # msg = f"Saved change with note: \"{note}\""
-        # if self.is_imp:
-        #     msg = f"Saved important change with note: \"{note}\""
-        # self.app_root.W_dashboard.main_log( msg, "SAVED" if not self.is_imp else "SAVED_IMP")
-        # self.app_root.W_dashboard.main_log("Waiting for changes...", "INFO")
-
-        # self.app_root.M_monitor.start_monitoring()
-        # self.destroy()
-
     def discard_btn_clicked(self):
-        print("discard method called")
         self.destroy()
+        # self.master.destroy()
         self.window_closed_callback()
 
     def _validate_notes(self, event=None):

@@ -6,5 +6,5 @@ class ChangeDataType(TypedDict):
     diff: List
 
 class ChangeNotesType(TypedDict):
-    normal: Dict
-    important: Dict
+    normal: ChangeDataType
+    important: ChangeDataType

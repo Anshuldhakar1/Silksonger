@@ -29,6 +29,7 @@ class AppManager(ctk.CTk):
         self.previous_data: Optional[Dict] = None
         self.selected_filepath: Optional[str] = None
         self.notif_test:bool = False
+        self.was_not_monitoring: Optional[bool] = None
 
         self.DashboardWindow: Optional[DashboardWindow] = None
         self.NotificaitonWindow: Optional[NotificaitonWindow] = None
@@ -52,6 +53,10 @@ class AppManager(ctk.CTk):
 
         self.Monitor = Monitor(self, change_callback=self.handle_change_detected)
         self.DashboardWindow = DashboardWindow(self)
+
+        # self.notifwindow_test()
+        # self.change_test()
+        self.sidelogs_test()
 
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
 
@@ -89,6 +94,8 @@ class AppManager(ctk.CTk):
         self.changes["important"] = change_logs[1]
 
         self.selected_filepath = filepath
+
+        # self.change_test()
 
     def handle_change_detected(self):
         try:
@@ -135,8 +142,21 @@ class AppManager(ctk.CTk):
                 window_closed_callback = self._on_notif_window_closed
             )
 
+    def show_change(self, note: str, is_imp:bool):
+        if self.ChangeWindow is None or not self.ChangeWindow.winfo_exists():
+            change : Optional[ChangeDataType] = None
+            if not is_imp:
+                change = self.changes.get("normal").get(note)
+            else:
+                change = self.changes.get("important").get(note)
+
+            self.ChangeWindow = ChangeWindow(
+                app_manager = self,
+                note = note,
+                change = change
+            )
+
     def _on_notif_window_save(self, note: str, changes: ChangeDataType, imp: bool):
-        
         self.FileManager.save_change(
             note= note,
             changes = changes,
@@ -149,12 +169,6 @@ class AppManager(ctk.CTk):
             sub_text=f"{len(changes['diff'])} changes detected"
         )
 
-        # new_data = {
-        #     "filepath": changes['filepath'],
-        #     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        #     "diff": changes['diff'],
-        # }
-
         msg = f"Saved change with note: \"{note}\""
         if imp:
             msg = f"Saved important change with note: \"{note}\""
@@ -165,7 +179,7 @@ class AppManager(ctk.CTk):
 
     def _on_notif_window_closed(self):
         self.DashboardWindow.main_log("Waiting for changes...", "INFO")
-        if not self.notif_test:
+        if not self.notif_test and self.was_not_monitoring is not None:
             self.Monitor.start_monitoring()
 
     def notifwindow_test(self):
@@ -173,102 +187,21 @@ class AppManager(ctk.CTk):
         # self.notif_test = True
         self.show_notification(changeData = change_data)
 
-    def sidelogs_test(self):
-        self.DashboardWindow.add_log_entry(
-            timestamp="2025-11-09 18:28:51",
-            main_text="note",
-            sub_text="5 changes detected"
-        )
+    def change_test(self):
+        self.withdraw()
 
-    #     self.FileManager.save_change(
-    #         note= "note",
-    #         changes = {
-    #     "filepath": "C:/Users/anshu/AppData/LocalLow/Team Cherry/Hollow Knight Silksong/1156132065/user4.dat",
-    #     "timestamp": "2025-11-09 18:28:51",
-    #     "diff": [
-    #         [
-    #             "change",
-    #             "playerData.playTime",
-    #             [
-    #                 5306.734,
-    #                 5452.45264
-    #             ]
-    #         ],
-    #         [
-    #             "change",
-    #             "playerData.pilgrimRestCrowd",
-    #             [
-    #                 1,
-    #                 4
-    #             ]
-    #         ],
-    #         [
-    #             "change",
-    #             "playerData.pilgrimGroupBonegrave",
-    #             [
-    #                 3,
-    #                 1
-    #             ]
-    #         ],
-    #         [
-    #             "change",
-    #             "playerData.pilgrimGroupShellgrave",
-    #             [
-    #                 1,
-    #                 2
-    #             ]
-    #         ],
-    #         [
-    #             "change",
-    #             "playerData.pilgrimGroupGreymoorField",
-    #             [
-    #                 3,
-    #                 2
-    #             ]
-    #         ],
-    #         [
-    #             "change",
-    #             "playerData.enemyGroupAnt04",
-    #             [
-    #                 2,
-    #                 3
-    #             ]
-    #         ],
-    #         [
-    #             "change",
-    #             "playerData.halfwayCrowEnemyGroup",
-    #             [
-    #                 2,
-    #                 1
-    #             ]
-    #         ],
-    #         [
-    #             "change",
-    #             "playerData.FisherWalkerTimer",
-    #             [
-    #                 63.0351753,
-    #                 21.4648724
-    #             ]
-    #         ],
-    #         [
-    #             "change",
-    #             "playerData.FisherWalkerDirection",
-    #             [
-    #                 True,
-    #                 False
-    #             ]
-    #         ],
-    #         [
-    #             "change",
-    #             "playerData.FisherWalkerIdleTimeLeft",
-    #             [
-    #                 -0.06382179,
-    #                 -0.005471822
-    #             ]
-    #         ]
-    #     ]
-    # },
-    #         imp = False  
-    #     )
+        self.DashboardWindow.on_file_selected("C:/Users/anshu/AppData/LocalLow/Team Cherry/Hollow Knight Silksong/1156132065/user4.dat")
+
+        note = "testing"
+        is_imp = False
+        self.show_change(note=note, is_imp=is_imp)
+
+    def sidelogs_test(self):
+        # self.DashboardWindow.add_log_entry(
+        #     timestamp="2025-11-09 18:28:51",
+        #     main_text="note",
+        #     sub_text="5 changes detected"
+        # )
+        self.DashboardWindow.on_file_selected("C:/Users/anshu/AppData/LocalLow/Team Cherry/Hollow Knight Silksong/1156132065/user4.dat")
 
 

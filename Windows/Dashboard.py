@@ -99,9 +99,10 @@ class DashboardWindow(ctk.CTk):
         divider.grid(row=3, column=0, sticky="ew", pady=(10,0))
 
         self.change_logs_frame = ctk.CTkFrame(self.sidebar_frame, 
-                                              fg_color="#F7F7F7",
-                                              border_width=1,
-                                              border_color="#e4e4e4")
+                                              fg_color="#FFFFFF",
+                                            #   border_width=1,
+                                            #   border_color="#e4e4e4"
+                                              )
         self.change_logs_frame.grid(row=4,column=0,sticky="nwes",padx=5,pady=5)
         self.change_logs_frame.grid_columnconfigure(0, weight=1)
         self.change_logs_frame.grid_columnconfigure(1, weight=1)
@@ -111,8 +112,10 @@ class DashboardWindow(ctk.CTk):
             self.change_logs_frame,
             text="Change Logs",
             fg_color="#fee2e2",
-            hover_color="#fee2e2",
+            hover_color="#f6dada",
             text_color="#801e1e",
+            border_width=1,
+            border_color="#612a2a",
             command=self.logs_btn_clicked
         )
         self.change_to_logs_btn.grid(row=0, column=0, padx=(5, 2), pady=5, sticky="ew")
@@ -121,14 +124,16 @@ class DashboardWindow(ctk.CTk):
             self.change_logs_frame,
             text="Important",
             fg_color="#EFEFEF",
-            hover_color="#efefef",
+            hover_color="#e3e3e3",
             text_color="#838383",
+            border_width=1,
+            border_color="#B1B1B1",
             command=self.imp_btn_clicked
         )
         self.change_to_imp_btn.grid(row=0, column=1, padx=(2, 5), pady=5, sticky="ew")
 
         self.log_list_frame = ctk.CTkScrollableFrame(self.change_logs_frame,
-                                                      fg_color="#F7F7F7",
+                                                      fg_color="#FFFFFF",
                                                     #   fg_color="green"
                                                       )
         self.log_list_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=(0, 5))
@@ -282,15 +287,19 @@ class DashboardWindow(ctk.CTk):
             self.main_log("No File Selected!!", "ERROR")
     
     # ------------------ Sidebar LOGS ------------------
-    def add_log_entry(self, timestamp:str, main_text:str, sub_text:str, log_id:str="yo"):
+    def add_log_entry(self, timestamp:str, main_text:str, sub_text:str, is_imp:bool=False):
         small_font = ctk.CTkFont(family="Helvetica", size=11, weight="normal")
         main_font = ctk.CTkFont(family="Helvetica", size=13, weight="bold")
-        NORMAL_BG = "#EFEFEF"
-        HOVER_BG = "#E5E5E5"
+        # NORMAL_BG = "#EFEFEF"
+        # HOVER_BG = "#E5E5E5"
+        NORMAL_BG = "#ffffff"
+        HOVER_BG = "#EFEFEF"
 
         entry_frame = ctk.CTkFrame(self.log_list_frame, 
                                    fg_color=NORMAL_BG, 
                                    cursor="hand2",
+                                   border_width=2,
+                                   border_color="#BEBEBE",
                                    height=70) 
         entry_frame.pack(fill="x", pady=(5, 0), padx=5)
         # Stop pack from shrinking the frame
@@ -340,7 +349,7 @@ class DashboardWindow(ctk.CTk):
             entry_frame.pack(fill="x", pady=(5, 0), padx=5)
 
         def _on_click(event):
-            self._on_log_entry_click(log_id) 
+            self._on_log_entry_click(main_text, is_imp=is_imp) 
 
         def _on_enter(event):
             entry_frame.configure(fg_color=HOVER_BG) 
@@ -357,10 +366,9 @@ class DashboardWindow(ctk.CTk):
             widget.bind("<Enter>", _on_enter)
             widget.bind("<Leave>", _on_leave)
 
-    def _on_log_entry_click(self, log_id):
-        print(f"Clicked log entry! ID: {log_id}")
-        # self.clear_log_entries()
-        self.app_manager.sidelogs_test()
+    def _on_log_entry_click(self, note: str, is_imp:bool):
+        self.app_manager.show_change(note=note, is_imp=is_imp)
+        # self.app_manager.notifwindow_test()
 
     def clear_log_entries(self):
         for widget in self.log_list_frame.winfo_children():
@@ -396,7 +404,7 @@ class DashboardWindow(ctk.CTk):
                 timestamp=timestamp,
                 main_text=log_key, 
                 sub_text=f"{num_diffs} changes detected",
-                log_id=log_key
+                is_imp=False
             )   
 
     def show_imp_changes(self):
@@ -416,7 +424,7 @@ class DashboardWindow(ctk.CTk):
                 timestamp=timestamp,
                 main_text=log_key, 
                 sub_text=f"{num_diffs} changes detected",
-                log_id=log_key
+                is_imp=True
             )                        
 
     # ------------------ File browsing  ------------------ 
@@ -553,11 +561,13 @@ class DashboardWindow(ctk.CTk):
             fg_color="#EFEFEF",
             hover_color="#efefef",
             text_color="#838383",
+            border_color="#B1B1B1",
         )
         self.change_to_logs_btn.configure(
             fg_color="#fee2e2",
             hover_color="#fee2e2",
             text_color="#801e1e",
+            border_color="#612a2a",
         )
 
         self.show_normal_changes()
@@ -570,11 +580,13 @@ class DashboardWindow(ctk.CTk):
             fg_color="#EFEFEF",
             hover_color="#efefef",
             text_color="#838383",
+            border_color="#B1B1B1",
         )
         self.change_to_imp_btn.configure(
             fg_color="#fee2e2",
             hover_color="#fee2e2",
             text_color="#801e1e",
+            border_color="#612a2a",   
         )
 
         self.show_imp_changes()

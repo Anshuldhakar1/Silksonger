@@ -66,7 +66,7 @@ class MonitorThread(threading.Thread):
         while not self._stop_event.is_set():
             try:
                 if self.has_changed():
-                    self._log_safe(f"MonitorThread Change detected in {self.target_file}", "INFO")
+                    self._log_safe(f"MonitorThread Change detected in {os.path.basename(self.target_file)}", "INFO")
                     self.update_baseline() 
                     self.callback()
 
