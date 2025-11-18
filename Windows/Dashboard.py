@@ -523,8 +523,7 @@ class DashboardWindow(ctk.CTk):
         )
         if filepath:
             self.app_manager.FileManager.file_selected(filepath)
-            # if self.file_selected_callback:
-            #     self.file_selected_callback(filename)
+            self.on_file_selected(filepath)
 
     # ------------------ Buttons  ------------------ 
     def set_monitor_btn_state(self, state: bool):

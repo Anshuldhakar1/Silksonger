@@ -1,23 +1,12 @@
 import json
 import os
 import time
-from Modules.error import BaseAppError
+from Modules.error import GamePathNotFoundError
 import traceback  # traceback.print_exc() pritns the stack trace
 from typing import List, Dict, Callable
 from Modules.SaveDecoder import decrypt_hollow_knight_save
 from Modules.types import ChangeNotesType, ChangeDataType
 
-class GamePathNotFoundError(BaseAppError):
-    """Exception raised when the expected game directory is not found."""
-    def __init__(self, msg: str):
-        # 1. Define the friendly info
-        dev_msg = msg
-        user_msg = ("The game directory could not be found.\n"
-                    "Please ensure the game is installed and "
-                    "has been run at least once.")
-        title = "Game Not Found"
-
-        super().__init__(dev_message=dev_msg, user_message=user_msg, title=title, app_close=True)
 
 class FileManager():
     def __init__(self):

@@ -11,4 +11,4 @@ __pycache__/
 
 build/
 dist/
-File Monitor.spec
+build.spec

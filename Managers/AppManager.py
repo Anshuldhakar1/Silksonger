@@ -9,7 +9,7 @@ from Managers.FileManager import FileManager, GamePathNotFoundError
 from Managers.AssetManager import AssetManager
 
 from Windows.Dashboard import DashboardWindow
-from Windows.Notification import NotificaitonWindow
+from Windows.Notification import NotificationWindow
 from Windows.Change import ChangeWindow
 from Windows.Error import ErrorWindow
 
@@ -32,7 +32,7 @@ class AppManager(ctk.CTk):
         self.was_not_monitoring: Optional[bool] = None
 
         self.DashboardWindow: Optional[DashboardWindow] = None
-        self.NotificaitonWindow: Optional[NotificaitonWindow] = None
+        self.NotificationWindow: Optional[NotificationWindow] = None
         self.ChangeWindow: Optional[ChangeWindow] = None
         self.ErrorWindow: Optional[ErrorWindow] = None
 
@@ -48,15 +48,28 @@ class AppManager(ctk.CTk):
             traceback.print_exc()  # prints stack trace
             self._error_popup(err)
 
-        self.title("File Monitor")
+        self.title("Silksong Save Monitor")
         self.geometry("920x560")
+
+        try:
+            icon_path = self.AssetManager._path("assets/icons/tiny_hornet.ico")
+            self.iconbitmap(icon_path)
+        except Exception as e:
+            print(f"Error setting window icon: {e}") # Log if icon fails to load
 
         self.Monitor = Monitor(self, change_callback=self.handle_change_detected)
         self.DashboardWindow = DashboardWindow(self)
 
+        self.focus()
+
+        # select user4.dat file
+        # self.DashboardWindow.on_file_selected("C:/Users/anshu/AppData/LocalLow/Team Cherry/Hollow Knight Silksong/1156132065/user4.dat")
+        # start monitoring
+        # self.DashboardWindow.toggle_monitoring()
+
         # self.notifwindow_test()
         # self.change_test()
-        self.sidelogs_test()
+        # self.sidelogs_test()
 
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
 
@@ -131,10 +144,10 @@ class AppManager(ctk.CTk):
             self.Monitor.force_update_baseline()
 
     def show_notification(self, changeData: ChangeDataType):
-        if self.NotificaitonWindow is None or not self.NotificaitonWindow.winfo_exists():
+        if self.NotificationWindow is None or not self.NotificationWindow.winfo_exists():
             self.Monitor.stop_monitoring()
 
-            self.NotificaitonWindow = NotificaitonWindow(
+            self.NotificationWindow = NotificationWindow(
                 self, 
                 input_change_data = changeData,
                 asset_manager = self.AssetManager,

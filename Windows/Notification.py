@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Callable
 if TYPE_CHECKING:
     from Managers.AssetManager import AssetManager
 
-class NotificaitonWindow(ctk.CTkToplevel):
+class NotificationWindow(ctk.CTkToplevel):
     def __init__(self, *args, 
                 input_change_data: ChangeDataType, 
                 asset_manager: 'AssetManager', 
@@ -194,7 +194,7 @@ class NotificaitonWindow(ctk.CTkToplevel):
         for widget in self.diff_scroll_frame.winfo_children():
             widget.destroy()
 
-        for i, item in enumerate(self.change['diff']):
+        for i, item in enumerate(self.raw_change_data['diff']):
 
             operation, path, values = item
             del_content, add_content = values
