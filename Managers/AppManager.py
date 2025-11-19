@@ -31,6 +31,8 @@ class AppManager(ctk.CTk):
         self.notif_test:bool = False
         self.was_not_monitoring: Optional[bool] = None
 
+        self.resume_monitoring_on_close: bool = False
+
         self.DashboardWindow: Optional[DashboardWindow] = None
         self.NotificationWindow: Optional[NotificationWindow] = None
         self.ChangeWindow: Optional[ChangeWindow] = None
@@ -106,11 +108,17 @@ class AppManager(ctk.CTk):
         self.changes["normal"] = change_logs[0]
         self.changes["important"] = change_logs[1]
 
+        # print("\nself.changes[\"normal\"] = \n")
+        # print(self.changes["normal"])
+        # print("\nself.changes[\"important\"] = \n")
+        # print(self.changes["important"])
+
         self.selected_filepath = filepath
 
         # self.change_test()
 
     def handle_change_detected(self):
+        self.DashboardWindow.status_set_not_monitoring()
         try:
             current_data = self.FileManager.load_save(
                 self.selected_filepath, 
@@ -132,6 +140,7 @@ class AppManager(ctk.CTk):
                 
                 self.DashboardWindow.main_log(f"Found {len(diff)} changes in {os.path.basename(self.selected_filepath)}", "MODIFY")
                 self.show_notification(change_data) 
+                # print("\nChange Data:")
                 # print(change_data)
 
                 self.previous_data = current_data
@@ -139,18 +148,23 @@ class AppManager(ctk.CTk):
                 self.DashboardWindow.main_log("Change detected, but no data diff found (e.g., whitespace change)", "INFO")
         except Exception as e:
             self.DashboardWindow.main_log(f"Error processing changes: {e}", "ERROR")
+            traceback.print_exec()
         finally:
             # 4. CRITICAL: Update the detector's baseline.
             self.Monitor.force_update_baseline()
 
     def show_notification(self, changeData: ChangeDataType):
         if self.NotificationWindow is None or not self.NotificationWindow.winfo_exists():
+            
+            self.resume_monitoring_on_close = self.Monitor.is_monitoring
+            
             self.Monitor.stop_monitoring()
 
             self.NotificationWindow = NotificationWindow(
                 self, 
                 input_change_data = changeData,
-                asset_manager = self.AssetManager,
+                app_manager = self,
+                # asset_manager = self.AssetManager,
                 window_save_callback = self._on_notif_window_save,
                 window_closed_callback = self._on_notif_window_closed
             )
@@ -176,27 +190,68 @@ class AppManager(ctk.CTk):
             imp = imp   
         )
 
-        self.DashboardWindow.add_log_entry(
-            timestamp=changes['timestamp'],
-            main_text=note,
-            sub_text=f"{len(changes['diff'])} changes detected"
-        )
+        if imp:
+            self.changes["important"][note] = changes
+            self.DashboardWindow.imp_btn_clicked()
+        else:            
+            self.changes["normal"][note] = changes
+            self.DashboardWindow.logs_btn_clicked()
 
-        msg = f"Saved change with note: \"{note}\""
+        msg: str = ""
         if imp:
             msg = f"Saved important change with note: \"{note}\""
-        self.DashboardWindow.main_log( msg, "SAVED" if not imp else "SAVED_IMP")
-        self.DashboardWindow.main_log("Waiting for changes...", "INFO")
+        else:
+            msg = f"Saved change with note: \"{note}\""
 
-        self.Monitor.start_monitoring()
+        self.DashboardWindow.main_log(msg, "SAVED_IMP" if imp else "SAVED")
+
+        if self.resume_monitoring_on_close:
+            # self.DashboardWindow.main_log("Resuming monitoring...", "INFO")
+            self.DashboardWindow.main_log(f"Started monitoring {os.path.basename(self.selected_filepath)}", "START")
+            self.DashboardWindow.status_set_monitoring()
+            self.Monitor.start_monitoring()
+        else:
+            self.DashboardWindow.status_set_not_monitoring()
 
     def _on_notif_window_closed(self):
-        self.DashboardWindow.main_log("Waiting for changes...", "INFO")
         if not self.notif_test and self.was_not_monitoring is not None:
-            self.Monitor.start_monitoring()
+
+            self.DashboardWindow.main_log("Changes discarded/ignored.", "INFO")
+            # CHECK FLAG: Only resume if we were running before
+            if self.resume_monitoring_on_close:
+                self.DashboardWindow.main_log("Resuming monitoring...", "INFO")
+                self.DashboardWindow.status_set_monitoring()
+                self.Monitor.start_monitoring()
+            else:
+                self.DashboardWindow.status_set_not_monitoring()
 
     def notifwindow_test(self):
-        change_data: ChangeDataType = {'filepath': 'C:/Users/anshu/AppData/LocalLow/Team Cherry/Hollow Knight Silksong/1156132065/user4.dat', 'timestamp': '2025-11-15 12:36:45', 'diff': [('change', 'playerData.date', ('2025-11-14', '2025-11-15')), ('change', 'playerData.playTime', (1117.3844, 1173.99)), ('change', 'playerData.mapperAway', (False, True)), ('change', 'playerData.pilgrimRestCrowd', (5, 1)), ('change', 'playerData.pilgrimGroupBonegrave', (1, 2)), ('change', 'playerData.pilgrimGroupShellgrave', (1, 2)), ('change', 'playerData.pilgrimGroupGreymoorField', (3, 1)), ('change', 'playerData.enemyGroupAnt04', (2, 1)), ('change', 'playerData.halfwayCrowd', (1, 4)), ('change', 'playerData.FisherWalkerTimer', (-0.007603127, 37.72893)), ('change', 'playerData.FisherWalkerDirection', (True, False)), ('change', 'playerData.FisherWalkerIdleTimeLeft', (32.3923225, -0.007298246))]}
+        change_data: ChangeDataType = {
+            'filepath': 'C:/Users/anshu/AppData/LocalLow/Team Cherry/Hollow Knight Silksong/1156132065/user4.dat', 
+            'timestamp': '2025-11-18 16:04:22', 
+            'diff': [
+                ('change', 'playerData.LastSetFieldName', ('SeenMapperBoneForest', 'disableInventory')), 
+                ('change', 'playerData.playTime', (2509.08423, 2554.81787)), 
+                ('change', 'playerData.hazardRespawnFacing', (2,0)), 
+                ('add', 'playerData.QuestCompletionData.savedData', [
+                    (1,{'Name': 'Mossberry Collection Pre', 'Data': {
+                            'HasBeenSeen': False, 
+                            'IsAccepted': True, 
+                            'CompletedCount': 0, 
+                            'IsCompleted': True, 
+                            'WasEverCompleted': True}
+                        }), 
+                    (2, {'Name': 'Mossberry Collection 1', 'Data': {
+                        'HasBeenSeen': False, 
+                        'IsAccepted': True, 
+                        'CompletedCount': 0, 
+                        'IsCompleted': False, 
+                        'WasEverCompleted': False
+                        }}
+                    )]
+                )
+            ]
+            }
         # self.notif_test = True
         self.show_notification(changeData = change_data)
 
@@ -216,5 +271,39 @@ class AppManager(ctk.CTk):
         #     sub_text="5 changes detected"
         # )
         self.DashboardWindow.on_file_selected("C:/Users/anshu/AppData/LocalLow/Team Cherry/Hollow Knight Silksong/1156132065/user4.dat")
+
+    def wrap_text( self, input: str, limit: int) -> str:
+        limit = limit
+        note_text = ""
+        start = 0
+        for _ in range(len(input) // limit + 1):
+            if start >= len(input):
+                break
+            end = min((start+limit) , len(input))
+            if end == len(input):
+                note_text = note_text + input[start:end].strip() + "\n"
+                start = end 
+                continue
+            while input[end] not in [" ","\n"]:
+                end -= 1
+            note_text = note_text + input[start:end].strip() + "\n"
+            start = end
+        note_text = note_text.rstrip("\n")
+
+        return note_text
+
+#  testing raw cahnges from notificaiton window
+
+# {'filepath': 'C:/Users/anshu/AppData/LocalLow/Team Cherry/Hollow Knight Silksong/1156132065/user4.dat', 'timestamp': '2025-11-18 16:00:35', 'diff': [('change', 'playerData.playTime', (2173.38037, 2466.70386)), ('change', 'playerData.geo', (0, 182)), ('change', 'playerData.silk', (0, 9)), ('change', 'playerData.atBench', (True, False)), ('change', 'playerData.respawnScene', ('Bonetown', 'Mosstown_02')), ('change', 'playerData.mapZone', (12, 19)), ('change', 'playerData.respawnMarkerName', ('RestBench', 'Death Respawn Marker')), ('change', 'playerData.respawnType', (1, 0)), ('change', 'playerData.hazardRespawnFacing', (1, 0)), ('change', 'playerData.HeroCorpseScene', ('Mosstown_01', '')), 
+# ('change', 'playerData.HeroCorpseMoneyPool', (48, 0)), ('change', 'playerData.hasSilkSpecial', (False, True)), ('change', 'playerData.hasNeedleThrow', (False, True)), ('change', ['playerData', 'EnemyJournalKillData', 'list', 4, 'Record', 'Kills'], (3, 7)), ('change', ['playerData', 'EnemyJournalKillData', 'list', 5, 'Record', 'Kills'], (1, 2)), ('change', ['playerData', 'EnemyJournalKillData', 'list', 6, 'Record', 'Kills'], (1, 4)), ('change', ['playerData', 'EnemyJournalKillData', 'list', 7, 'Record', 'Kills'], (1, 2)), ('add', 'playerData.EnemyJournalKillData.list', [(8, 
+# {'Name': 'Bone Flyer', 'Record': {'Kills': 1, 'HasBeenSeen': False}}), (9, {'Name': 'Pilgrim 03', 'Record': {'Kills': 4, 'HasBeenSeen': False}}), (10, {'Name': 'Aspid Collector', 'Record': {'Kills': 1, 'HasBeenSeen': False}})]), ('change', 'playerData.currentArea', ('BONEBOTTOM', 'MOSSTOWN')), ('add', 'playerData.scenesVisited', [(11, 'Bone_01c'), (12, 'Bone_01c_top'), (13, 'Mosstown_02')]), ('change', 'playerData.environmentType', (0, 6)), ('change', 'playerData.mosstown01_shortcut', (False, True)), ('change', 'playerData.FisherWalkerTimer', (68.51077, 68.51352)), ('change', 'playerData.FisherWalkerIdleTimeLeft', (31.6293373, 72.16206)), ('change', 'playerData.completionPercentage', (0.0, 1.0)), ('change', 'playerData.ToolPaneHasNew', (False, True)), ('add', ['playerData', 'ToolEquips', 'savedData', 
+# 0, 'Data'], [('Slots', [{'EquippedTool': '', 'IsUnlocked': False}, {'EquippedTool': '', 'IsUnlocked': False}, {'EquippedTool': '', 'IsUnlocked': False}, {'EquippedTool': 'Silk Spear', 'IsUnlocked': False}, {'EquippedTool': '', 'IsUnlocked': False}, {'EquippedTool': '', 'IsUnlocked': False}, {'EquippedTool': '', 'IsUnlocked': False}])]), ('change', 'playerData.ShellShards', (93, 139)), ('remove', 'playerData', [('HeroCorpseMarkerGuid', '9hdmALwmB0+MNBDU/nJnwQ==')]), ('change', ['sceneData', 'persistentBools', 'serializedList', 43, 'Value'], (False, True)), ('change', ['sceneData', 'persistentBools', 'serializedList', 69, 'Value'], (False, True)), ('change', ['sceneData', 'persistentBools', 'serializedList', 70, 'Value'], (False, True)), ('add', 'sceneData.persistentBools.serializedList', [(71, {'SceneName': 'Bone_01c', 'ID': 'Inverse Remasker', 'Value': False, 'Mutator': 0}), (72, {'SceneName': 'Bone_01c', 'ID': 'Inverse Remasker (1)', 'Value': True, 'Mutator': 0}), (73, {'SceneName': 'Bone_01c', 'ID': 'bell_toll_machine', 'Value': False, 'Mutator': 0}), (74, {'SceneName': 'Bone_01c', 'ID': 'Geo Med Persistent', 'Value': False, 'Mutator': 0}), (75, {'SceneName': 'Bone_01c', 'ID': 'Geo Small Persistent (2)', 'Value': False, 'Mutator': 0}), (76, {'SceneName': 'Bone_01c', 'ID': 'Geo Small Persistent (1)', 'Value': False, 'Mutator': 0}), (77, {'SceneName': 'Mosstown_02', 'ID': 'Breakable Wall', 'Value': False, 'Mutator': 0}), (78, {'SceneName': 'Mosstown_02', 'ID': 'Vine Platform', 'Value': False, 'Mutator': 0}), (79, {'SceneName': 'Mosstown_02', 'ID': 'moss_bone_plaque', 'Value': False, 'Mutator': 0}), (80, {'SceneName': 'Mosstown_02', 'ID': 'Collectable Item Pickup', 'Value': False, 'Mutator': 0}), (81, {'SceneName': 'Mosstown_02', 'ID': 'Remasker New Sharp', 'Value': False, 'Mutator': 0}), (82, {'SceneName': 'Mosstown_02', 'ID': 'Silkfly Ambient (2)', 'Value': True, 'Mutator': 0}), (83, {'SceneName': 'Mosstown_02', 'ID': 'Silkfly Ambient (1)', 'Value': True, 'Mutator': 0}), (84, {'SceneName': 'Mosstown_02', 'ID': 'Silkfly Ambient', 'Value': True, 'Mutator': 0}), (85, {'SceneName': 'Mosstown_02', 'ID': 'Thick Silk Vines', 'Value': False, 'Mutator': 0}), (86, {'SceneName': 'Mosstown_02', 'ID': 'Thick Silk Vines (1)', 'Value': False, 'Mutator': 0}), (87, {'SceneName': 'Mosstown_02', 'ID': 'Reminder Silk Skill (1)', 'Value': False, 'Mutator': 0}), (88, {'SceneName': 'Mosstown_02', 'ID': 'Reminder Silk Skill', 'Value': False, 'Mutator': 0})]), ('change', ['sceneData', 'persistentInts', 'serializedList', 20, 'Value'], (-1, 2)), ('change', ['sceneData', 'persistentInts', 'serializedList', 21, 'Value'], (-1, 2)), ('add', 'sceneData.persistentInts.serializedList', [(22, {'SceneName': 'Bone_01c', 'ID': 'rosary_string_small_half (1)', 'Value': -1, 'Mutator': 0}), (23, {'SceneName': 'Bone_01c', 'ID': 'rosary_string_medium', 'Value': -1, 'Mutator': 0}), (24, {'SceneName': 'Mosstown_02', 'ID': 'rosary_string_small', 'Value': 3, 'Mutator': 0}), (25, {'SceneName': 'Mosstown_02', 
+# 'ID': 'rosary_string_small_half', 'Value': 2, 'Mutator': 0})]), ('add', 'sceneData.geoRocks.serializedList', [(1, {'SceneName': 'Bone_01c', 'ID': 'Geo Rock 3', 'Value': 0, 'Mutator': 0}), (2, {'SceneName': 'Bone_01c', 'ID': 'Geo Rock 1 (1)', 'Value': 0, 'Mutator': 0})])]}
+
+# testing change_data
+
+# {'filepath': 'C:/Users/anshu/AppData/LocalLow/Team Cherry/Hollow Knight Silksong/1156132065/user4.dat', 'timestamp': '2025-11-18 16:04:22', 'diff': [('change', 'playerData.LastSetFieldName', ('SeenMapperBoneForest', 'disableInventory')), ('change', 'playerData.playTime', (2509.08423, 2554.81787)), ('change', 'playerData.hazardRespawnFacing', (2, 
+# 0)), ('change', 'playerData.mapperAway', (True, False)), ('change', 'playerData.metDruid', (False, True)), ('change', 'playerData.pilgrimRestCrowd', (4, 3)), ('change', 'playerData.pilgrimGroupBonegrave', (3, 2)), ('change', 'playerData.pilgrimGroupGreymoorField', (2, 1)), ('change', 'playerData.halfwayCrowd', (4, 3)), ('change', 'playerData.halfwayCrowEnemyGroup', (2, 1)), ('change', 'playerData.FisherWalkerTimer', (68.51352, 52.91661)), ('change', 'playerData.FisherWalkerDirection', (False, True)), ('change', 'playerData.FisherWalkerIdleTimeLeft', (30.1708431, -0.0125436988)), ('change', 'playerData.promisedFirstWish', (False, True)), ('add', 'playerData.QuestCompletionData.savedData', [(1, {'Name': 'Mossberry Collection Pre', 'Data': {'HasBeenSeen': False, 'IsAccepted': True, 'CompletedCount': 0, 'IsCompleted': True, 'WasEverCompleted': True}}), (2, {'Name': 'Mossberry Collection 1', 'Data': {'HasBeenSeen': False, 'IsAccepted': True, 'CompletedCount': 0, 'IsCompleted': False, 'WasEverCompleted': False}})])]}
+
 
 

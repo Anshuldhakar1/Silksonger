@@ -252,12 +252,18 @@ class DashboardWindow(ctk.CTk):
         self.main_log(f"Selected File {os.path.basename(filepath)}", "MODIFY")
         self.show_normal_changes()
 
+    def status_set_not_monitoring(self):
+        self.status_indicator_label.configure(text="\u25cf Not Monitoring", text_color="#DC2626")
+    
+    def status_set_monitoring(self):
+        self.status_indicator_label.configure(text="\u25cf Monitoring Active", text_color="#059669")
+
     def release_file(self):
+        self.status_set_not_monitoring()
         if self.selected_file_path:
            
             if self.app_manager.Monitor.is_monitoring:
                 self.app_manager.Monitor.stop_monitoring()
-                self.status_indicator_label.configure(text="\u25cf Not Monitoring", text_color="#DC2626")
 
             # after file release the logs tab button should be selected
             self.change_to_imp_btn.configure(
@@ -596,10 +602,10 @@ class DashboardWindow(ctk.CTk):
 
         if not self.app_manager.Monitor.is_monitoring:
             self.app_manager.Monitor.start_monitoring()
-            self.status_indicator_label.configure(text="\u25cf Monitoring Active", text_color="#059669")
+            self.status_set_monitoring()
             self.main_log(f"Started monitoring {os.path.basename(self.selected_file_path)}", "START")
             self.main_log("Waiting for changes ...", "INFO")
         else:
             self.app_manager.Monitor.stop_monitoring()
-            self.status_indicator_label.configure(text="\u25cf Not Monitoring", text_color="#DC2626")
+            self.status_set_not_monitoring()
             # self.main_log("Monitoring stopped", "STOP")
