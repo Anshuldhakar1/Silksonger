@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from Modules.error import GamePathNotFoundError
+from Modules.error import FileOperationError, GamePathNotFoundError, SaveFileError
 import traceback  # traceback.print_exc() pritns the stack trace
 from typing import List, Dict, Callable
 from Modules.SaveDecoder import decrypt_hollow_knight_save
@@ -55,8 +55,8 @@ class FileManager():
             with open(self.recent_files_path, 'w') as file:
                 json.dump(recent_files, file, indent=4)
         except Exception as e:
-            traceback.print_exc()
-            print(e)
+            # Wrap general IO errors
+            raise FileOperationError(f"Failed to save recent files: {e}", context="History Update")
 
     def get_recent_files(self) -> List:
         try:
@@ -72,19 +72,15 @@ class FileManager():
         self.path_norm = os.path.join(self.data_dir,"files",new_filename_normal)
         self.path_imp = os.path.join(self.data_dir,"files",new_filename_imp)
 
-        if not os.path.isfile(self.path_norm):
-            try:
+        try:
+            if not os.path.isfile(self.path_norm):
                 with open(self.path_norm,'w') as f:
                     json.dump({},f)
-            except Exception as e:
-                print(f"Exception occured while creating file slot: {e}")
-
-        if not os.path.isfile(self.path_imp):
-            try:
+            if not os.path.isfile(self.path_imp):
                 with open(self.path_imp,'w') as f:
                     json.dump({},f)
-            except Exception as e:
-                print(f"Exception occured while creating file slot: {e}")
+        except Exception as e:
+            raise FileOperationError(f"Failed to create change logs slots: {e}", context="File Slot Creation")
 
     def load_change_logs(self, filepath: str) -> List[ChangeNotesType]:
         filename = os.path.basename(filepath)
@@ -94,20 +90,24 @@ class FileManager():
 
         logs=[]
 
-        with open(normal_changes_path,'r') as file:
-            logs.append(
-                json.load(file)
-            )
-        with open(imp_changes_path,'r') as file:
-            logs.append(
-                json.load(file)
-            )
+        try:
+            with open(normal_changes_path,'r') as file:
+                logs.append(
+                    json.load(file)
+                )
+            with open(imp_changes_path,'r') as file:
+                logs.append(
+                    json.load(file)
+                )
+        except Exception as e:
+            raise FileOperationError(f"Failed to load existing change logs: {e}", context="Loading Logs")
 
         return logs
 
     def load_save(self, filepath: str, logger: Callable) -> Dict:
         max_retries = 5
         retry_delay = 0.2
+        last_error = None
 
         for attempt in range(max_retries):
             try:
@@ -121,37 +121,36 @@ class FileManager():
 
                 decrypted_json = decrypt_hollow_knight_save(encrypted_data)
                 return json.loads(decrypted_json)
+
             except (PermissionError, OSError):
-                # File is locked, retry after delay
+                # File is locked, retry
                 time.sleep(retry_delay)
+            except SaveFileError as e:
+                # If decryption fails, we usually don't retry unless we suspect a partial write
+                # For now, we let it bubble up immediately or retry if you prefer.
+                # Let's assume a corrupted file implies we stop immediately.
+                raise e 
             except Exception as e:
+                last_error = e
                 logger(f"Error reading file: {e}", "ERROR")
                 time.sleep(retry_delay)
 
-        logger("Failed to read file after multiple retries", "ERROR")
-        return {}
+        # If we exit the loop, we failed. Raise a custom error.
+        raise FileOperationError(f"Failed to read save file after retries. Last error: {last_error}", context="Load Save")
 
     def save_change(self, note: str, changes: ChangeDataType, imp: bool):
         try:
             data = {}
-            if not imp:
-                if os.path.isfile(self.path_norm) and os.path.getsize(self.path_norm) > 0:
-                    with open(self.path_norm, 'r') as file:
-                        data = json.load(file)
-                    
-                    data[note] = changes
-                    with open(self.path_norm, 'w') as file:
-                        json.dump(data, file, indent=4)
-                    return
-            else:
-                if os.path.isfile(self.path_imp) and os.path.getsize(self.path_imp) > 0:
-                    with open(self.path_imp, 'r') as file:
-                        data = json.load(file)
-                    
-                    data[note] = changes
-                    with open(self.path_imp, 'w') as file:
-                        json.dump(data, file, indent=4)
-                    return
+            target_path = self.path_imp if imp else self.path_norm
+
+            if os.path.isfile(target_path) and os.path.getsize(target_path) > 0:
+                with open(target_path, 'r') as file:
+                    data = json.load(file)
+            
+            data[note] = changes
+            with open(target_path, 'w') as file:
+                json.dump(data, file, indent=4)
+                
         except Exception as e:
-            print(f"Error adding a new change. {e}")
+             raise FileOperationError(f"Failed to save change log: {e}", context="Save Change Log")
 

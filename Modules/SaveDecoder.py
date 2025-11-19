@@ -2,6 +2,7 @@ import base64
 import json
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
+from Modules.error import SaveFileError
 
 # --- Configuration ---
 HOLLOW_KNIGHT_KEY = b'UKu52ePUBwetZ9wNX88o54dnfKRu0T1l'
@@ -61,7 +62,8 @@ def decrypt_hollow_knight_save(data: bytes) -> str:
         json.loads(json_string) # Verify it's valid JSON
         return json_string
     except Exception as e:
-        raise ValueError(f"Failed to decrypt save file. Error: {e}")
+        # Raised as a custom error to be caught by AppManager
+        raise SaveFileError(f"Failed to decrypt save file. Error: {e}")
 
 def encrypt_hollow_knight_save(json_data: dict) -> bytes:
     try:
@@ -72,4 +74,5 @@ def encrypt_hollow_knight_save(json_data: dict) -> bytes:
         final_data = add_header(encoded_data)
         return final_data
     except Exception as e:
-        raise ValueError(f"Failed to encrypt save data. Error: {e}")
+        # Raised as a custom error to be caught by AppManager
+        raise SaveFileError(f"Failed to encrypt save data. Error: {e}")

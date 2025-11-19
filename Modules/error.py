@@ -45,4 +45,18 @@ class NotificationWindowError(BaseAppError):
         
         super().__init__(dev_message=msg, user_message=user_message, title=title, app_close=False)
 
+class SaveFileError(BaseAppError):
+    """Raised when encryption/decryption or JSON parsing of the save file fails."""
+    def __init__(self, msg: str):
+        title = "Save File Error"
+        user_msg = "Failed to process the save file.\nIt might be corrupted, encrypted incorrectly, or empty."
+        
+        super().__init__(dev_message=msg, user_message=user_msg, title=title, app_close=False)
 
+class FileOperationError(BaseAppError):
+    """Raised when general file IO operations fail (reading/writing/creating)."""
+    def __init__(self, msg: str, context: str = "File Operation"):
+        title = f"{context} Error"
+        user_msg = f"An error occurred during {context}.\nPlease check file permissions and try again."
+        
+        super().__init__(dev_message=msg, user_message=user_msg, title=title, app_close=False)
