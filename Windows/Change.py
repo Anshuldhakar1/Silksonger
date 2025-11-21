@@ -5,8 +5,11 @@ import customtkinter as ctk
 
 from Modules.error import ChangeWindowError
 from Modules.types import ChangeDataType
+from Modules.DiffLogic import render_diff_view # Import the new renderer
+
 if TYPE_CHECKING:
     from Managers.AppManager import AppManager
+
 class ChangeWindow(ctk.CTkToplevel):
     def __init__(self, *args, 
                 app_manager: 'AppManager',
@@ -27,14 +30,11 @@ class ChangeWindow(ctk.CTkToplevel):
 
         self.configure(fg_color="white")
 
-        # CONFIGURE ROWS
-        self.grid_rowconfigure(0, weight=0)  # Row 0 for header_frame
-        self.grid_rowconfigure(1, weight=1)  # Row 1 for main_content_frame (the diff)
-        self.grid_rowconfigure(2, weight=0)  # Row 2 for footer_frame
+        self.grid_rowconfigure(0, weight=0)  
+        self.grid_rowconfigure(1, weight=1)  
+        self.grid_rowconfigure(2, weight=0)  
 
         self.grid_columnconfigure(0, weight=1)
-
-        # print(self.change.get("diff"))
 
         try:
             self._gui_header()
@@ -42,13 +42,13 @@ class ChangeWindow(ctk.CTkToplevel):
             self._gui_footer()
 
             self.deiconify()
-            self.grab_set()  # Block interaction with other windows
+            self.grab_set()  
             self.focus()
             
             self.protocol("WM_DELETE_WINDOW", self.closing)
         except Exception as e:
             traceback.print_exc()
-            self.destroy() # Close broken window
+            self.destroy() 
             self.app_manager._error_popup(ChangeWindowError(str(e)))
     
     def _gui_header(self):
@@ -63,17 +63,13 @@ class ChangeWindow(ctk.CTkToplevel):
         self.header_frame.grid_rowconfigure(2, weight=0)
 
         divider = ctk.CTkFrame(self.header_frame,
-                            height=1, # the height here means nothing, the border makes it visible   
+                            height=1, 
                             fg_color="#B8B8B8",
                             border_width=1)   
 
-        # Use sticky="ew" to make it stretch horizontally (East-West)
         divider.grid(row=0, column=0, sticky="ew", pady=0, columnspan=2)
 
-        base_dir = os.path.join(os.path.expanduser("~"), 
-            "AppData", 
-            "LocalLow", 
-            "Team Cherry")
+        base_dir = os.path.join(os.path.expanduser("~"), "AppData", "LocalLow", "Team Cherry")
         filepath = self.change.get("filepath")[len(base_dir):]
 
         self.title_label = ctk.CTkLabel(
@@ -98,11 +94,10 @@ class ChangeWindow(ctk.CTkToplevel):
         self.timestamp_label.grid(row=1,column=1,padx=(0,15), pady=8)
 
         divider = ctk.CTkFrame(self.header_frame,
-                            height=1, # the height here means nothing, the border makes it visible   
+                            height=1, 
                             fg_color="#5C5C5C",
                             border_width=1)   
 
-        # Use sticky="ew" to make it stretch horizontally (East-West)
         divider.grid(row=2, column=0, sticky="ew", pady=0, columnspan=2)
 
     def _gui_main(self):
@@ -115,22 +110,20 @@ class ChangeWindow(ctk.CTkToplevel):
         self.diff_scroll_frame = ctk.CTkScrollableFrame(
             self.diff_frame,
             fg_color="transparent",
-            # border_width=1,
-            # border_color="#cdcdcd"
         )
         self.diff_scroll_frame.grid(row=0, column=0, sticky="nsew", padx=0, pady=10)
 
-        self.populate_diff()
+        # --- Use Centralized Render Logic ---
+        render_diff_view(
+            scroll_frame=self.diff_scroll_frame, 
+            diff_data=self.change['diff'], 
+            asset_manager=self.app_manager.AssetManager
+        )
 
     def _gui_footer(self):
-
         FOOTER_COLOR = "#f0f0f0"
-        self.footer_frame = ctk.CTkFrame(
-            self,
-            fg_color=FOOTER_COLOR,
-        )
+        self.footer_frame = ctk.CTkFrame(self, fg_color=FOOTER_COLOR)
         self.footer_frame.grid( padx=0, pady=0, sticky="ew")
-
 
         FOOTER_PADDING = 10
 
@@ -138,24 +131,16 @@ class ChangeWindow(ctk.CTkToplevel):
         self.footer_frame.grid_columnconfigure(1,weight=0)
 
         divider = ctk.CTkFrame(self.footer_frame,
-                            height=1, # the height here means nothing, the border makes it visible   
+                            height=1, 
                             fg_color="#5C5C5C",
                             border_width=1)   
 
-        # Use sticky="ew" to make it stretch horizontally (East-West)
         divider.grid(row=0, column=0, sticky="ew", pady=0, columnspan=2)
 
-        self.note_frame = ctk.CTkFrame(
-            self.footer_frame,
-            # fg_color="red",
-            fg_color="transparent"
-        )
+        self.note_frame = ctk.CTkFrame(self.footer_frame, fg_color="transparent")
         self.note_frame.grid( row=1, column=0, sticky="ew", pady=FOOTER_PADDING, padx=(10,0))
 
-        self.btn_frame = ctk.CTkFrame(
-            self.footer_frame,
-            fg_color="transparent"
-        )
+        self.btn_frame = ctk.CTkFrame(self.footer_frame, fg_color="transparent")
         self.btn_frame.grid( row=1, column=1, sticky="w", pady=FOOTER_PADDING, padx=(0,10))
 
         font_bold = ctk.CTkFont(family="Roboto Mono", size=14, weight="bold")
@@ -164,16 +149,8 @@ class ChangeWindow(ctk.CTkToplevel):
         self.note_frame.grid_columnconfigure(0,weight=0)
         self.note_frame.grid_columnconfigure(1,weight=1)
 
-        # footer note
-
-        note_label1 = ctk.CTkLabel(
-            self.note_frame,
-            text="Note:",
-            font=font_bold,
-        )
+        note_label1 = ctk.CTkLabel(self.note_frame, text="Note:", font=font_bold)
         note_label1.grid( row=0, column=0, padx=0, pady=0)
-
-        # self.note = "Defeated the high halls gauntlet and got silk spool from high halls high halls high halls high halls"
 
         note_label2 = ctk.CTkLabel(
             self.note_frame,
@@ -188,35 +165,11 @@ class ChangeWindow(ctk.CTkToplevel):
         self.btn_frame.grid_columnconfigure(1,weight=0)
         self.btn_frame.grid_columnconfigure(2,weight=0)
 
-        # btn1 = ctk.CTkButton(
-        #     self.btn_frame,
-        #     text="Edit",
-        #     image=self.app_manager.AssetManager.get_icon("edit_note_icon"),
-        #     font=font_normal,
-        #     width=0, # tells the app to calc the width acc to content
-        #     fg_color=FOOTER_COLOR,
-        #     hover_color=FOOTER_COLOR,
-        #     text_color="#000000",
-        # )
-        # btn1.grid( row=0, column=0, padx=(10,5), pady=0)
-        
-        # btn2 = ctk.CTkButton(
-        #     self.btn_frame,
-        #     text="Important",
-        #     image=self.app_manager.AssetManager.get_icon("star_red"),
-        #     font=font_normal,
-        #     width=0, # tells the app to calc the width acc to content
-        #     fg_color=FOOTER_COLOR,
-        #     hover_color=FOOTER_COLOR,
-        #     text_color="#D92626",
-        # )
-        # btn2.grid( row=0, column=1, padx=10, pady=0)
-
         btn3 = ctk.CTkButton(
             self.btn_frame,
             text=" Close ",
             font=font_normal,
-            width=0, # tells the app to calc the width acc to content
+            width=0,
             fg_color="#D92626",
             hover_color="#CC2525",
             command=self.closing,
@@ -225,275 +178,3 @@ class ChangeWindow(ctk.CTkToplevel):
 
     def closing(self):
         self.destroy()
-        # self.app_manager._on_closing()   # remember to remove after testing
-
-    # def populate_diff(self):
-    #     for i, item in enumerate(self.change['diff']):
-
-    #         operation, path, values = item
-    #         del_content, add_content = values
-
-    #         change_frame = ctk.CTkFrame(
-    #             self.diff_scroll_frame,
-    #             fg_color="#f7f7f7" if i%2 == 0 else "#fcfcfc",
-    #         )
-    #         change_frame.pack( padx=15, pady=5, fill="x", expand=True)
-    #         change_frame.grid_columnconfigure(0, weight=1)
-
-    #         diff_font = ctk.CTkFont(family="Roboto Mono", size=13, weight="normal")
-    #         diff_font_bold = ctk.CTkFont(family="Roboto Mono", size=13, weight="bold")
-
-    #         title_frame = ctk.CTkFrame(
-    #             change_frame,
-    #             fg_color="transparent",
-    #         )
-    #         title_frame.grid( row=0, column=0, padx=5, pady=2, sticky="ew")
-
-    #         arrow_label = ctk.CTkLabel(
-    #             title_frame,
-    #             text="",
-    #             image=self.app_manager.AssetManager.get_icon("arrow_right")
-    #         )
-    #         arrow_label.grid(row=0, column=0, padx=0, pady=0)
-
-    #         title_label = ctk.CTkLabel(
-    #             title_frame,
-    #             text=f"{path}",
-    #             fg_color="transparent",
-    #             font=diff_font_bold,
-    #             text_color="#616161"
-    #         )
-    #         title_label.grid(row=0, column=1, padx=(3,0),sticky="w")
-
-    #         values_frame = ctk.CTkFrame(
-    #             change_frame,
-    #             fg_color="transparent",
-    #         )
-    #         values_frame.grid( row=1, column=0, padx=5, pady=(0,5), sticky="ew")
-
-    #         def del_widget(col: int = 0):
-    #             values_frame.grid_columnconfigure(col, weight=0)
-    #             del_frame = ctk.CTkFrame(
-    #                 values_frame,
-    #                 fg_color="#fdecec",
-    #                 border_width=2,
-    #                 border_color="#656565",
-    #             )
-    #             del_frame.grid( row=0, column=col, padx=5, pady=0, sticky="w")
-
-    #             label_del = ctk.CTkLabel(
-    #                 del_frame,
-    #                 text=f" - {del_content} ",
-    #                 text_color="#b81818",
-    #                 font=diff_font,
-    #             )
-    #             label_del.pack(padx=5, pady=2)
-
-    #         def add_widget(col: int = 1):
-    #             values_frame.grid_columnconfigure(col, weight=0)
-    #             add_frame = ctk.CTkFrame(
-    #                 values_frame,
-    #                 fg_color="#e8f9ef",
-    #                 border_width=2,
-    #                 border_color="#656565",
-    #             )
-    #             add_frame.grid( row=0, column=col, padx=5, pady=0, sticky="w")
-
-    #             label_add = ctk.CTkLabel(
-    #                 add_frame,
-    #                 text=f" + {add_content} ",
-    #                 text_color="#117e3a",
-    #                 font=diff_font,
-    #             )
-    #             label_add.pack(padx=5, pady=2)
-
-    #         if operation == "change":
-    #             del_widget()
-    #             add_widget()
-    #         elif operation == "add":
-    #             add_widget(col=0)
-    #         elif operation == "del":
-    #             del_widget()
-
-
-    def populate_diff(self):
-        try:
-            for widget in self.diff_scroll_frame.winfo_children():
-                widget.destroy()
-
-            for i, item in enumerate(self.change['diff']):
-                operation, path, values = item
-
-                if len(values) > 2 and operation == "add":
-                    total_items = len(values)
-                    for idx, sub_item in enumerate(values):
-                        batch_info = f"  [{idx + 1}/{total_items}]"
-                        
-                        self._create_change_row(
-                            index=i, 
-                            path=path,
-                            del_content=None, 
-                            add_content=sub_item,
-                            operation=operation,
-                            suffix_title=batch_info
-                        )
-                elif len(values) > 2 and operation == "remove":
-                    total_items = len(values)
-                    for idx, sub_item in enumerate(values):
-                        batch_info = f"  [{idx + 1}/{total_items}]"
-                        
-                        self._create_change_row(
-                            index=i, 
-                            path=path,
-                            del_content=sub_item, 
-                            add_content=None,
-                            operation=operation,
-                            suffix_title=batch_info
-                        )   
-                elif len(values) == 2 and operation == "change":
-                    del_content, add_content = values
-                    self._create_change_row(
-                        index=i, 
-                        path=path, 
-                        del_content=del_content, 
-                        add_content=add_content, 
-                        operation=operation
-                    )
-                elif len(values) == 1 and operation == "remove":
-                    del_content = values
-                    self._create_change_row(
-                        index=i, 
-                        path=path, 
-                        del_content=del_content, 
-                        add_content=None, 
-                        operation=operation
-                    )
-                elif len(values) == 1 and operation == "add":
-                    add_content = values
-                    self._create_change_row(
-                        index=i, 
-                        path=path, 
-                        del_content=None, 
-                        add_content=add_content, 
-                        operation=operation
-                    )
-        except Exception as e:
-            traceback.print_exc()
-            self.app_manager._error_popup(ChangeWindowError(f"Failed to populate diff: {e}"))
-
-    def _create_change_row(self, index, path, del_content, add_content, operation, suffix_title=""):
-        """
-        Helper function to draw a single row. 
-        """
-        # Determine background color (Alternating)
-        bg_color = "#f7f7f7" if index % 2 == 0 else "#fcfcfc"
-
-        change_frame = ctk.CTkFrame(self.diff_scroll_frame, fg_color=bg_color)
-        change_frame.pack(padx=15, pady=5, fill="x", expand=True)
-        change_frame.grid_columnconfigure(0, weight=1)
-
-        diff_font = ctk.CTkFont(family="Roboto Mono", size=13, weight="normal")
-        diff_font_bold = ctk.CTkFont(family="Roboto Mono", size=13, weight="bold")
-
-        # --- Title Section ---
-        title_frame = ctk.CTkFrame(change_frame, fg_color="transparent")
-        title_frame.grid(row=0, column=0, padx=5, pady=0, sticky="ew")
-
-        arrow_label = ctk.CTkLabel(title_frame, text="", image=self.app_manager.AssetManager.get_icon("arrow_right"))
-        arrow_label.grid(row=0, column=0, padx=0, pady=0)
-
-        # Combine Path + Suffix
-        full_title_text = f"{path}{suffix_title}"
-        
-        title_label = ctk.CTkLabel(
-            title_frame,
-            text=full_title_text,
-            fg_color="transparent",
-            font=diff_font_bold,
-            text_color="#616161" if not suffix_title else "#888888" # Lighter if it's a sub-item
-        )
-        title_label.grid(row=0, column=1, padx=(3, 0), sticky="w")
-
-        # --- Values Section ---
-        values_frame = ctk.CTkFrame(change_frame, fg_color="transparent")
-        values_frame.grid(row=1, column=0, padx=0, pady=0, sticky="ew")
-
-        # -- Internal Helper: Draw Deletion (Red) --
-        def draw_del(col=0):
-            values_frame.grid_columnconfigure(col, weight=0)
-            del_frame = ctk.CTkFrame(
-                values_frame, fg_color="#fdecec", 
-                border_width=2, border_color="#656565"
-            )
-            del_frame.grid(row=0, column=col, padx=5, pady=0, sticky="w")
-
-            content = f"{del_content} "
-            label_del = ctk.CTkLabel(
-                del_frame, text=content, text_color="#b81818", font=diff_font
-            )
-            label_del.pack(padx=5, pady=2)
-
-        # -- Internal Helper: Draw Addition (Green) --
-        def draw_add(col=1):
-            values_frame.grid_columnconfigure(col, weight=0)
-            add_frame = ctk.CTkFrame(
-                values_frame, fg_color="#e8f9ef", 
-                border_width=2, border_color="#656565"
-            )
-            add_frame.grid(row=0, column=col, padx=5, pady=0, sticky="w")
-
-            # Use the recursive formatter we made earlier
-            formatted_text = self.expanded_format(add_content)
-            content = f" {formatted_text}"
-
-            label_add = ctk.CTkLabel(
-                add_frame,
-                text=content,
-                text_color="#117e3a",
-                font=diff_font,
-                justify="left",
-                anchor="w",
-            )
-            label_add.pack(padx=(5,8), pady=2)
-
-        # --- Render logic ---
-        if operation == "change":
-            if del_content is not None: draw_del()
-            if add_content is not None: draw_add()
-        elif operation == "add":
-            draw_add(col=0)
-        elif operation == "remove":
-            draw_del()
-
-    def expanded_format(self, data, indent:int = 0):
-
-        # Define indentation size (e.g., 4 spaces)
-        step = "    " 
-        current_indent = step * indent
-        next_indent = step * (indent + 1)
-
-        if isinstance(data, dict):
-            if not data: return "{}" # Handle empty dicts
-            lines = ["{"]
-            for key, value in data.items():
-                # Format: 'Key': Value (recursively formatted)
-                lines.append(f"{next_indent}{repr(key)}: {self.expanded_format(value, indent + 1)},")
-            lines.append(f"{current_indent}}}")
-            return "\n".join(lines)
-
-        elif isinstance(data, (list, tuple)):
-            is_list = isinstance(data, list)
-            if not data: return "[]" if is_list else "()"
-            
-            open_char = "[" if is_list else "("
-            close_char = "]" if is_list else ")"
-            
-            lines = [open_char]
-            for item in data:
-                lines.append(f"{next_indent}{self.expanded_format(item, indent + 1)},")
-            lines.append(f"{current_indent}{close_char}")
-            return "\n".join(lines)
-
-        else:
-            # Base case: Integers, Strings, Booleans, None
-            return repr(data)
