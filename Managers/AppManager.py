@@ -2,7 +2,7 @@ import os
 import customtkinter as ctk
 from typing import Optional, Dict
 import traceback # traceback.print_exc() pritns the stack trace
-import dictdiffer  
+# import dictdiffer  
 from datetime import datetime  
 
 from Managers.FileManager import FileManager
@@ -16,6 +16,7 @@ from Windows.Error import ErrorWindow
 from Modules.error import BaseAppError
 from Modules.Monitor import Monitor
 from Modules.types import ChangeDataType, ChangeNotesType
+from Modules.DiffLogic import compute_save_diff
 
 class AppManager(ctk.CTk):
     def __init__(self):
@@ -125,7 +126,6 @@ class AppManager(ctk.CTk):
             self._error_popup(BaseAppError(str(e), "An unexpected error occurred while selecting the file."))
 
     def handle_change_detected(self):
-        # Pause monitoring updates while processing
         self.DashboardWindow.status_set_not_monitoring()
         
         try:
@@ -136,7 +136,7 @@ class AppManager(ctk.CTk):
             
             # load_save now raises exceptions on failure, so if we get here, current_data is valid.
             
-            diff = list(dictdiffer.diff(self.previous_data, current_data))
+            diff = compute_save_diff(self.previous_data, current_data)
 
             if diff:
                 change_data: ChangeDataType = {
