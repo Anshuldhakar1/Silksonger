@@ -1,6 +1,8 @@
 import os
+import traceback
 import customtkinter as ctk
 
+from Modules.error import NotificationWindowError
 from Modules.types import ChangeDataType
 from typing import TYPE_CHECKING, Callable
 
@@ -43,16 +45,21 @@ class NotificationWindow(ctk.CTkToplevel):
         self.grid_columnconfigure(0, weight=1) # Diff column
         self.grid_columnconfigure(1, weight=0) # Notes column
 
-        self._gui_header()
-        self._gui_main()
+        try:
+            self._gui_header()
+            self._gui_main()
 
-        self.attributes("-topmost", True) # Keeps the window above others
-        self.lift()                       # Moves window to top of stack
-        self.focus_force()
+            self.attributes("-topmost", True) # Keeps the window above others
+            self.lift()                       # Moves window to top of stack
+            self.focus_force()
 
-        self.deiconify() 
-        self.grab_set()  # Block interaction with other windows
-        # self.focus()
+            self.deiconify() 
+            self.grab_set()  # Block interaction with other windows
+            # self.focus()
+        except Exception as e:
+            traceback.print_exc()
+            self.destroy()
+            self.app_manager._error_popup(NotificationWindowError(str(e)))
 
         self.protocol("WM_DELETE_WINDOW", self.discard_btn_clicked)
 
@@ -199,65 +206,69 @@ class NotificationWindow(ctk.CTkToplevel):
         self.discard_btn.grid(row=1, column=1, sticky="ew", padx=(3, 0))
   
     def _populate_diff(self):
-        for widget in self.diff_scroll_frame.winfo_children():
-            widget.destroy()
+        try:
+            for widget in self.diff_scroll_frame.winfo_children():
+                widget.destroy()
 
-        for i, item in enumerate(self.raw_change_data['diff']):
-            operation, path, values = item
+            for i, item in enumerate(self.raw_change_data['diff']):
+                operation, path, values = item
 
-            if len(values) > 2 and operation == "add":
-                total_items = len(values)
-                for idx, sub_item in enumerate(values):
-                    batch_info = f"  [{idx + 1}/{total_items}]"
-                    
+                if len(values) > 2 and operation == "add":
+                    total_items = len(values)
+                    for idx, sub_item in enumerate(values):
+                        batch_info = f"  [{idx + 1}/{total_items}]"
+                        
+                        self._create_change_row(
+                            index=i, 
+                            path=path,
+                            del_content=None, 
+                            add_content=sub_item,
+                            operation=operation,
+                            suffix_title=batch_info
+                        )
+                elif len(values) > 2 and operation == "remove":
+                    total_items = len(values)
+                    for idx, sub_item in enumerate(values):
+                        batch_info = f"  [{idx + 1}/{total_items}]"
+                        
+                        self._create_change_row(
+                            index=i, 
+                            path=path,
+                            del_content=sub_item, 
+                            add_content=None,
+                            operation=operation,
+                            suffix_title=batch_info
+                        )   
+                elif len(values) == 2 and operation == "change":
+                    del_content, add_content = values
                     self._create_change_row(
                         index=i, 
-                        path=path,
-                        del_content=None, 
-                        add_content=sub_item,
-                        operation=operation,
-                        suffix_title=batch_info
+                        path=path, 
+                        del_content=del_content, 
+                        add_content=add_content, 
+                        operation=operation
                     )
-            elif len(values) > 2 and operation == "remove":
-                total_items = len(values)
-                for idx, sub_item in enumerate(values):
-                    batch_info = f"  [{idx + 1}/{total_items}]"
-                    
+                elif len(values) == 1 and operation == "remove":
+                    del_content = values
                     self._create_change_row(
                         index=i, 
-                        path=path,
-                        del_content=sub_item, 
-                        add_content=None,
-                        operation=operation,
-                        suffix_title=batch_info
-                    )   
-            elif len(values) == 2 and operation == "change":
-                del_content, add_content = values
-                self._create_change_row(
-                    index=i, 
-                    path=path, 
-                    del_content=del_content, 
-                    add_content=add_content, 
-                    operation=operation
-                )
-            elif len(values) == 1 and operation == "remove":
-                del_content = values
-                self._create_change_row(
-                    index=i, 
-                    path=path, 
-                    del_content=del_content, 
-                    add_content=None, 
-                    operation=operation
-                )
-            elif len(values) == 1 and operation == "add":
-                add_content = values
-                self._create_change_row(
-                    index=i, 
-                    path=path, 
-                    del_content=None, 
-                    add_content=add_content, 
-                    operation=operation
-                )
+                        path=path, 
+                        del_content=del_content, 
+                        add_content=None, 
+                        operation=operation
+                    )
+                elif len(values) == 1 and operation == "add":
+                    add_content = values
+                    self._create_change_row(
+                        index=i, 
+                        path=path, 
+                        del_content=None, 
+                        add_content=add_content, 
+                        operation=operation
+                    )
+        except Exception as e:
+            traceback.print_exc()
+            self.app_manager._error_popup(NotificationWindowError(f"Diff render failed: {e}"))
 
     def _create_change_row(self, index, path, del_content, add_content, operation, suffix_title=""):
         """
@@ -484,11 +495,15 @@ class NotificationWindow(ctk.CTkToplevel):
             self.mark_important_btn.configure(text="Mark as Important")
 
     def save_btn(self):
-        note = self.notes_textbox.get("1.0", "end").strip()
-        if not note:
-            return
-        self.window_save_callback(note = note, changes=self.raw_change_data, imp=self.is_imp)
-        self.destroy()
+        try:
+            note = self.notes_textbox.get("1.0", "end").strip()
+            if not note:
+                return
+            self.window_save_callback(note = note, changes=self.raw_change_data, imp=self.is_imp)
+            self.destroy()
+        except Exception as e:
+            traceback.print_exc()
+            self.app_manager._error_popup(NotificationWindowError(f"Save failed: {e}"))
 
     def discard_btn_clicked(self):
         # self.master.destroy()

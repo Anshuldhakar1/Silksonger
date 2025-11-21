@@ -1,7 +1,9 @@
 import os
+import traceback
 from typing import Callable, TYPE_CHECKING
 import customtkinter as ctk
 
+from Modules.error import ChangeWindowError
 from Modules.types import ChangeDataType
 if TYPE_CHECKING:
     from Managers.AppManager import AppManager
@@ -34,15 +36,20 @@ class ChangeWindow(ctk.CTkToplevel):
 
         # print(self.change.get("diff"))
 
-        self._gui_header()
-        self._gui_main()
-        self._gui_footer()
+        try:
+            self._gui_header()
+            self._gui_main()
+            self._gui_footer()
 
-        self.deiconify()
-        self.grab_set()  # Block interaction with other windows
-        self.focus()
-        
-        self.protocol("WM_DELETE_WINDOW", self.closing)
+            self.deiconify()
+            self.grab_set()  # Block interaction with other windows
+            self.focus()
+            
+            self.protocol("WM_DELETE_WINDOW", self.closing)
+        except Exception as e:
+            traceback.print_exc()
+            self.destroy() # Close broken window
+            self.app_manager._error_popup(ChangeWindowError(str(e)))
     
     def _gui_header(self):
         self.header_frame = ctk.CTkFrame(self, fg_color="#f0f0f0", corner_radius=0)
@@ -310,65 +317,69 @@ class ChangeWindow(ctk.CTkToplevel):
 
 
     def populate_diff(self):
-        for widget in self.diff_scroll_frame.winfo_children():
-            widget.destroy()
+        try:
+            for widget in self.diff_scroll_frame.winfo_children():
+                widget.destroy()
 
-        for i, item in enumerate(self.change['diff']):
-            operation, path, values = item
+            for i, item in enumerate(self.change['diff']):
+                operation, path, values = item
 
-            if len(values) > 2 and operation == "add":
-                total_items = len(values)
-                for idx, sub_item in enumerate(values):
-                    batch_info = f"  [{idx + 1}/{total_items}]"
-                    
+                if len(values) > 2 and operation == "add":
+                    total_items = len(values)
+                    for idx, sub_item in enumerate(values):
+                        batch_info = f"  [{idx + 1}/{total_items}]"
+                        
+                        self._create_change_row(
+                            index=i, 
+                            path=path,
+                            del_content=None, 
+                            add_content=sub_item,
+                            operation=operation,
+                            suffix_title=batch_info
+                        )
+                elif len(values) > 2 and operation == "remove":
+                    total_items = len(values)
+                    for idx, sub_item in enumerate(values):
+                        batch_info = f"  [{idx + 1}/{total_items}]"
+                        
+                        self._create_change_row(
+                            index=i, 
+                            path=path,
+                            del_content=sub_item, 
+                            add_content=None,
+                            operation=operation,
+                            suffix_title=batch_info
+                        )   
+                elif len(values) == 2 and operation == "change":
+                    del_content, add_content = values
                     self._create_change_row(
                         index=i, 
-                        path=path,
-                        del_content=None, 
-                        add_content=sub_item,
-                        operation=operation,
-                        suffix_title=batch_info
+                        path=path, 
+                        del_content=del_content, 
+                        add_content=add_content, 
+                        operation=operation
                     )
-            elif len(values) > 2 and operation == "remove":
-                total_items = len(values)
-                for idx, sub_item in enumerate(values):
-                    batch_info = f"  [{idx + 1}/{total_items}]"
-                    
+                elif len(values) == 1 and operation == "remove":
+                    del_content = values
                     self._create_change_row(
                         index=i, 
-                        path=path,
-                        del_content=sub_item, 
-                        add_content=None,
-                        operation=operation,
-                        suffix_title=batch_info
-                    )   
-            elif len(values) == 2 and operation == "change":
-                del_content, add_content = values
-                self._create_change_row(
-                    index=i, 
-                    path=path, 
-                    del_content=del_content, 
-                    add_content=add_content, 
-                    operation=operation
-                )
-            elif len(values) == 1 and operation == "remove":
-                del_content = values
-                self._create_change_row(
-                    index=i, 
-                    path=path, 
-                    del_content=del_content, 
-                    add_content=None, 
-                    operation=operation
-                )
-            elif len(values) == 1 and operation == "add":
-                add_content = values
-                self._create_change_row(
-                    index=i, 
-                    path=path, 
-                    del_content=None, 
-                    add_content=add_content, 
-                    operation=operation
-                )
+                        path=path, 
+                        del_content=del_content, 
+                        add_content=None, 
+                        operation=operation
+                    )
+                elif len(values) == 1 and operation == "add":
+                    add_content = values
+                    self._create_change_row(
+                        index=i, 
+                        path=path, 
+                        del_content=None, 
+                        add_content=add_content, 
+                        operation=operation
+                    )
+        except Exception as e:
+            traceback.print_exc()
+            self.app_manager._error_popup(ChangeWindowError(f"Failed to populate diff: {e}"))
 
     def _create_change_row(self, index, path, del_content, add_content, operation, suffix_title=""):
         """
