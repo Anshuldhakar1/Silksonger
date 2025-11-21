@@ -15,6 +15,9 @@ SCENE_KEYS = {
 def get_scene_key(item: dict) -> str:
     return f"{item.get('SceneName', 'Unk')}: {item.get('ID', 'Unk')}"
 
+def get_story_key(item: dict) -> str:
+    return f"{item.get('SceneName', 'Unk')} @ {item.get('PlayTime', 0)}"
+
 def get_name_key(item: dict) -> str:
     return item.get("Name", "Unknown")
 
@@ -30,6 +33,7 @@ def diff_simple_list(path: str, old_list: List[Any], new_list: List[Any]) -> Lis
     # Find removed items (preserving order from old_list)
     removed = [x for x in old_list if x not in new_set]
     
+    # Return single grouped events
     if added:
         diffs.append(("add", path, added))
     if removed:
@@ -44,6 +48,10 @@ def diff_keyed_list(path: str, old_list: List[Dict], new_list: List[Dict], key_f
     
     all_keys = set(old_map.keys()) | set(new_map.keys())
     
+    # Aggregate adds/removes to display them in one group
+    added_items = {}
+    removed_items = {}
+    
     for key in all_keys:
         in_old = key in old_map
         in_new = key in new_map
@@ -51,12 +59,12 @@ def diff_keyed_list(path: str, old_list: List[Dict], new_list: List[Dict], key_f
         if not in_old and in_new:
             new_item = new_map[key]
             val = new_item.get(value_key) if value_key in new_item else new_item
-            diffs.append(("add", path, [(key, val)]))
+            added_items[key] = val
             
         elif in_old and not in_new:
             old_item = old_map[key]
             val = old_item.get(value_key) if value_key in old_item else old_item
-            diffs.append(("remove", path, [(key, val)]))
+            removed_items[key] = val
             
         elif in_old and in_new:
             old_item = old_map[key]
@@ -67,6 +75,12 @@ def diff_keyed_list(path: str, old_list: List[Dict], new_list: List[Dict], key_f
             if val_old != val_new:
                 friendly_path = f"{path}[{key}]"
                 diffs.append(("change", friendly_path, (val_old, val_new)))
+    
+    # Append aggregated events
+    if added_items:
+        diffs.append(("add", path, added_items))
+    if removed_items:
+        diffs.append(("remove", path, removed_items))
                 
     return diffs
 
@@ -78,10 +92,11 @@ def compute_save_diff(old_data: Dict, new_data: Dict) -> List[Tuple]:
     old_pd = old_data.get("playerData", {})
     new_pd = new_data.get("playerData", {})
     
-    # Added "scenesVisited" and "Tools" to ignore list so they are handled by custom logic below
+    # Explicitly ignore these keys in the generic loop so our custom logic handles them
     ignored_pd_keys = {
         "EnemyJournalKillData", "QuestCompletionData", "ToolEquips", "Collectables",
-        "scenesVisited", "Tools"
+        "scenesVisited", "Tools", "scenesMapped", "FleasCollectedTargetOrder",
+        "StoryEvents" 
     }
     
     for k, v_new in new_pd.items():
@@ -90,13 +105,37 @@ def compute_save_diff(old_data: Dict, new_data: Dict) -> List[Tuple]:
         if v_old != v_new:
             changes.append(("change", f"playerData.{k}", (v_old, v_new)))
 
-    # --- Custom List Handlers ---
-
+    # --- Custom Handlers ---
+    
     # Scenes Visited (Simple List)
     changes.extend(diff_simple_list(
         "playerData.scenesVisited",
         old_pd.get("scenesVisited", []),
         new_pd.get("scenesVisited", [])
+    ))
+    
+    # Fleas Collected Order List (Simple List)
+    changes.extend(diff_simple_list(
+        "playerData.FleasCollectedTargetOrder",
+        old_pd.get("FleasCollectedTargetOrder", []),
+        new_pd.get("FleasCollectedTargetOrder", [])
+    ))
+
+    # Scenes Mapped (Simple List)
+    changes.extend(diff_simple_list(
+        "playerData.scenesMapped",
+        old_pd.get("scenesMapped", []),
+        new_pd.get("scenesMapped", [])
+    ))
+
+    # Story Events (Keyed List)
+    # We use a non-existent value_key (like "Data") so it defaults 
+    # to showing the whole dictionary object when an item is added.
+    changes.extend(diff_keyed_list(
+        "playerData.StoryEvents",
+        old_pd.get("StoryEvents", []),
+        new_pd.get("StoryEvents", []),
+        get_story_key, value_key="Data" 
     ))
 
     # Tools (Keyed List)
@@ -231,17 +270,12 @@ def render_diff_view(scroll_frame: ctk.CTkScrollableFrame, diff_data: List, asse
     for i, item in enumerate(diff_data):
         operation, path, values = item
         
+        # Display Adds/Removes in a single block now (no looping over values)
         if operation == "add":
-            total = len(values)
-            for idx, sub in enumerate(values):
-                batch = f"  [{idx+1}/{total}]" if total > 1 else ""
-                create_change_row(i, path, None, sub, operation, batch)
+            create_change_row(i, path, None, values, operation)
         
         elif operation == "remove":
-            total = len(values)
-            for idx, sub in enumerate(values):
-                batch = f"  [{idx+1}/{total}]" if total > 1 else ""
-                create_change_row(i, path, sub, None, operation, batch)
+            create_change_row(i, path, values, None, operation)
                 
         elif operation == "change":
             old, new = values
