@@ -1,9 +1,12 @@
 from datetime import datetime
+import traceback
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog
 from typing import TYPE_CHECKING, Optional
 import os
+
+from Modules.error import DashboardError
 
 if TYPE_CHECKING:
     from Managers.AppManager import AppManager
@@ -239,18 +242,22 @@ class DashboardWindow(ctk.CTk):
 
     def on_file_selected(self, filepath: str):
         
-        self.file_entry.delete(0, "end")
-        self.file_entry.insert(0, os.path.basename(filepath))
+        try:
+            self.file_entry.delete(0, "end")
+            self.file_entry.insert(0, os.path.basename(filepath))
 
-        self.selected_file_path = filepath
-        self.app_manager.file_selected(filepath)
-        self.app_manager.FileManager.file_selected(filepath)
+            self.selected_file_path = filepath
+            self.app_manager.file_selected(filepath)
+            self.app_manager.FileManager.file_selected(filepath)
 
-        self.set_monitor_btn_state(True)
-        self.set_stop_btn_state(True)
-        
-        self.main_log(f"Selected File {os.path.basename(filepath)}", "MODIFY")
-        self.show_normal_changes()
+            self.set_monitor_btn_state(True)
+            self.set_stop_btn_state(True)
+            
+            self.main_log(f"Selected File {os.path.basename(filepath)}", "MODIFY")
+            self.show_normal_changes()
+        except Exception as e:
+            traceback.print_exc()
+            self.app_manager._error_popup(DashboardError(str(e)))
 
     def status_set_not_monitoring(self):
         self.status_indicator_label.configure(text="\u25cf Not Monitoring", text_color="#DC2626")
@@ -259,38 +266,42 @@ class DashboardWindow(ctk.CTk):
         self.status_indicator_label.configure(text="\u25cf Monitoring Active", text_color="#059669")
 
     def release_file(self):
-        self.status_set_not_monitoring()
-        if self.selected_file_path:
-           
-            if self.app_manager.Monitor.is_monitoring:
-                self.app_manager.Monitor.stop_monitoring()
-
-            # after file release the logs tab button should be selected
-            self.change_to_imp_btn.configure(
-                fg_color="#EFEFEF",
-                hover_color="#efefef",
-                text_color="#838383",
-            )
-            self.change_to_logs_btn.configure(
-                fg_color="#fee2e2",
-                hover_color="#fee2e2",
-                text_color="#801e1e",
-            )
-
-            self.set_monitor_btn_state(False)
-            self.set_stop_btn_state(False)
-
-            self.clear_log_entries()
-            self.main_log(f"Released File {os.path.basename(self.selected_file_path)}", "MODIFY")
+        try:
+            self.status_set_not_monitoring()
+            if self.selected_file_path:
             
-            self.selected_file_path = None
-            self.app_manager.Monitor.release_target()
+                if self.app_manager.Monitor.is_monitoring:
+                    self.app_manager.Monitor.stop_monitoring()
 
-            self.file_entry.delete(0, "end")
-            self.file_entry.configure(placeholder_text="C:\\...\\save.dat")
-            self.add_simple_msg_to_log_entry("-------- Select a File to continue --------")
-        else:
-            self.main_log("No File Selected!!", "ERROR")
+                # after file release the logs tab button should be selected
+                self.change_to_imp_btn.configure(
+                    fg_color="#EFEFEF",
+                    hover_color="#efefef",
+                    text_color="#838383",
+                )
+                self.change_to_logs_btn.configure(
+                    fg_color="#fee2e2",
+                    hover_color="#fee2e2",
+                    text_color="#801e1e",
+                )
+
+                self.set_monitor_btn_state(False)
+                self.set_stop_btn_state(False)
+
+                self.clear_log_entries()
+                self.main_log(f"Released File {os.path.basename(self.selected_file_path)}", "MODIFY")
+                
+                self.selected_file_path = None
+                self.app_manager.Monitor.release_target()
+
+                self.file_entry.delete(0, "end")
+                self.file_entry.configure(placeholder_text="C:\\...\\save.dat")
+                self.add_simple_msg_to_log_entry("-------- Select a File to continue --------")
+            else:
+                self.main_log("No File Selected!!", "ERROR")
+        except Exception as e:
+            traceback.print_exc()
+            self.app_manager._error_popup(DashboardError(f"Failed to release file: {e}"))
     
     # ------------------ Sidebar LOGS ------------------
     def add_log_entry(self, timestamp:str, main_text:str, sub_text:str, is_imp:bool=False):
@@ -501,35 +512,44 @@ class DashboardWindow(ctk.CTk):
         if self.selected_file_path:  # do not open recents if a file is selected
             return   # todo add code to stop monitoring and stopping it, then opening this new file
         
-        recent_files = self.app_manager.FileManager.get_recent_files()
-
-        menu = tk.Menu(self.app_manager, tearoff=0)
-
-        for filepath in recent_files:
-            filename = os.path.basename(filepath)
-            menu.add_command(
-                label=filename,
-                command=lambda f=filepath: self.on_file_selected(f)
-            )
-
-        widget = self.history_button 
-        x = widget.winfo_rootx() - 100
-        y = widget.winfo_rooty() + widget.winfo_height() + 2 
-
         try:
+            recent_files = self.app_manager.FileManager.get_recent_files()
+
+            menu = tk.Menu(self.app_manager, tearoff=0)
+
+            for filepath in recent_files:
+                filename = os.path.basename(filepath)
+                menu.add_command(
+                    label=filename,
+                    command=lambda f=filepath: self.on_file_selected(f)
+                )
+
+            widget = self.history_button 
+            x = widget.winfo_rootx() - 100
+            y = widget.winfo_rooty() + widget.winfo_height() + 2 
+
             menu.tk_popup(x, y)
+        except Exception as e:
+            traceback.print_exc()
+            self.app_manager._error_popup(DashboardError(f"Failed to open recent files menu: {e}"))
         finally:
-            menu.grab_release()
+            try:
+                menu.grab_release()
+            except: pass
 
     def browse(self):
-        filepath = filedialog.askopenfilename(
-            initialdir=self.app_manager.FileManager.target_directory,
-            title="Select Save File",
-            filetypes=[("DAT files", "*.dat"), ("All files", "*.*")]
-        )
-        if filepath:
-            self.app_manager.FileManager.file_selected(filepath)
-            self.on_file_selected(filepath)
+        try:
+            filepath = filedialog.askopenfilename(
+                initialdir=self.app_manager.FileManager.target_directory,
+                title="Select Save File",
+                filetypes=[("DAT files", "*.dat"), ("All files", "*.*")]
+            )
+            if filepath:
+                self.app_manager.FileManager.file_selected(filepath)
+                self.on_file_selected(filepath)
+        except Exception as e:
+            traceback.print_exc()
+            self.app_manager._error_popup(DashboardError(f"Browser error: {e}"))
 
     # ------------------ Buttons  ------------------ 
     def set_monitor_btn_state(self, state: bool):
@@ -597,15 +617,18 @@ class DashboardWindow(ctk.CTk):
         self.show_imp_changes()
 
     def toggle_monitoring(self):
-        if not self.selected_file_path:
-            return
+        try:
+            if not self.selected_file_path:
+                return
 
-        if not self.app_manager.Monitor.is_monitoring:
-            self.app_manager.Monitor.start_monitoring()
-            self.status_set_monitoring()
-            self.main_log(f"Started monitoring {os.path.basename(self.selected_file_path)}", "START")
-            self.main_log("Waiting for changes ...", "INFO")
-        else:
-            self.app_manager.Monitor.stop_monitoring()
-            self.status_set_not_monitoring()
-            # self.main_log("Monitoring stopped", "STOP")
+            if not self.app_manager.Monitor.is_monitoring:
+                self.app_manager.Monitor.start_monitoring()
+                self.status_set_monitoring()
+                self.main_log(f"Started monitoring {os.path.basename(self.selected_file_path)}", "START")
+                self.main_log("Waiting for changes ...", "INFO")
+            else:
+                self.app_manager.Monitor.stop_monitoring()
+                self.status_set_not_monitoring()
+        except Exception as e:
+            traceback.print_exc()
+            self.app_manager._error_popup(DashboardError(f"Monitoring toggle failed: {e}"))
