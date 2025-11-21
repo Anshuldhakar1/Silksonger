@@ -172,22 +172,40 @@ def render_diff_view(scroll_frame: ctk.CTkScrollableFrame, diff_data: List, asse
         values_frame = ctk.CTkFrame(change_frame, fg_color="transparent")
         values_frame.grid(row=1, column=0, padx=0, pady=0, sticky="ew")
 
+        # --- Deletion Rendering (FIXED) ---
         if del_content is not None:
             values_frame.grid_columnconfigure(0, weight=0)
             del_frame = ctk.CTkFrame(values_frame, fg_color="#fdecec", border_width=2, border_color="#656565")
             del_frame.grid(row=0, column=0, padx=5, pady=0, sticky="w")
             
-            lbl = ctk.CTkLabel(del_frame, text=f"{del_content} ", text_color="#b81818", font=diff_font)
+            # FIX: Use expanded_format here too!
+            fmt_del = expanded_format(del_content)
+            lbl = ctk.CTkLabel(
+                del_frame, 
+                text=f"{fmt_del} ", 
+                text_color="#b81818", 
+                font=diff_font,
+                justify="left", # Ensure multiline dicts align left
+                anchor="w"
+            )
             lbl.pack(padx=5, pady=2)
 
+        # --- Addition Rendering ---
         if add_content is not None:
             col = 1 if del_content is not None else 0
             values_frame.grid_columnconfigure(col, weight=0)
             add_frame = ctk.CTkFrame(values_frame, fg_color="#e8f9ef", border_width=2, border_color="#656565")
             add_frame.grid(row=0, column=col, padx=5, pady=0, sticky="w")
             
-            fmt_text = expanded_format(add_content)
-            lbl = ctk.CTkLabel(add_frame, text=f" {fmt_text}", text_color="#117e3a", font=diff_font, justify="left", anchor="w")
+            fmt_add = expanded_format(add_content)
+            lbl = ctk.CTkLabel(
+                add_frame, 
+                text=f" {fmt_add}", 
+                text_color="#117e3a", 
+                font=diff_font, 
+                justify="left", 
+                anchor="w"
+            )
             lbl.pack(padx=(5,8), pady=2)
 
     # Clear existing content
