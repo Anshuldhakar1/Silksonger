@@ -28,8 +28,8 @@ class AppManager(ctk.CTk):
         }
         self.previous_data: Optional[Dict] = None
         self.selected_filepath: Optional[str] = None
-        self.notif_test:bool = False
-        self.was_not_monitoring: Optional[bool] = None
+        # self.notif_test:bool = False
+        # self.was_not_monitoring: Optional[bool] = None
 
         self.resume_monitoring_on_close: bool = False
 
@@ -123,42 +123,6 @@ class AppManager(ctk.CTk):
         except Exception as e:
             traceback.print_exc()
             self._error_popup(BaseAppError(str(e), "An unexpected error occurred while selecting the file."))
-
-    # def handle_change_detected(self):
-    #     self.DashboardWindow.status_set_not_monitoring()
-    #     try:
-    #         current_data = self.FileManager.load_save(
-    #             self.selected_filepath, 
-    #             logger=self.DashboardWindow.main_log
-    #         )
-
-    #         if not current_data:
-    #             self.DashboardWindow.main_log("Something went wrong reading the current save","ERROR")
-    #             return
-            
-    #         diff = list(dictdiffer.diff(self.previous_data, current_data))
-
-    #         if diff:
-    #             change_data: ChangeDataType = {
-    #                 "filepath": self.selected_filepath, # this is str
-    #                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), # this is str
-    #                 "diff": diff, # this is list
-    #             }
-                
-    #             self.DashboardWindow.main_log(f"Found {len(diff)} changes in {os.path.basename(self.selected_filepath)}", "MODIFY")
-    #             self.show_notification(change_data) 
-    #             # print("\nChange Data:")
-    #             # print(change_data)
-
-    #             self.previous_data = current_data
-    #         else:
-    #             self.DashboardWindow.main_log("Change detected, but no data diff found (e.g., whitespace change)", "INFO")
-    #     except Exception as e:
-    #         self.DashboardWindow.main_log(f"Error processing changes: {e}", "ERROR")
-    #         traceback.print_exec()
-    #     finally:
-    #         # 4. CRITICAL: Update the detector's baseline.
-    #         self.Monitor.force_update_baseline()
 
     def handle_change_detected(self):
         # Pause monitoring updates while processing
@@ -263,16 +227,13 @@ class AppManager(ctk.CTk):
             self._error_popup(e)
 
     def _on_notif_window_closed(self):
-        if not self.notif_test and self.was_not_monitoring is not None:
-
-            self.DashboardWindow.main_log("Changes discarded/ignored.", "INFO")
-            # CHECK FLAG: Only resume if we were running before
-            if self.resume_monitoring_on_close:
-                self.DashboardWindow.main_log("Resuming monitoring...", "INFO")
-                self.DashboardWindow.status_set_monitoring()
-                self.Monitor.start_monitoring()
-            else:
-                self.DashboardWindow.status_set_not_monitoring()
+        self.DashboardWindow.main_log("Changes discarded/ignored.", "INFO")
+        if self.resume_monitoring_on_close:
+            self.DashboardWindow.main_log(f"Started monitoring {os.path.basename(self.selected_filepath)}", "START")
+            self.DashboardWindow.status_set_monitoring()
+            self.Monitor.start_monitoring()
+        else:
+            self.DashboardWindow.status_set_not_monitoring()
 
     def notifwindow_test(self):
         change_data: ChangeDataType = {

@@ -30,6 +30,11 @@ class ErrorWindow(ctk.CTkToplevel):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.deiconify()  # Show the window
         self.grab_set()  # Block interaction with other windows
+
+        self.attributes("-topmost", True) # Keeps the window above others
+        self.lift()                       # Moves window to top of stack
+        self.focus_force()
+
         if not self.base_err.app_close:
             self.wait_window()  # Halt execution until this window is destroyed
 

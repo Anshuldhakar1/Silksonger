@@ -198,11 +198,11 @@ class NotificationWindow(ctk.CTkToplevel):
         # Row 1, Column 1. 3px padding on the left.
         self.discard_btn.grid(row=1, column=1, sticky="ew", padx=(3, 0))
   
-    def populate_diff(self):
+    def _populate_diff(self):
         for widget in self.diff_scroll_frame.winfo_children():
             widget.destroy()
 
-        for i, item in enumerate(self.change['diff']):
+        for i, item in enumerate(self.raw_change_data['diff']):
             operation, path, values = item
 
             if len(values) > 2 and operation == "add":
@@ -491,9 +491,9 @@ class NotificationWindow(ctk.CTkToplevel):
         self.destroy()
 
     def discard_btn_clicked(self):
-        self.destroy()
         # self.master.destroy()
         self.window_closed_callback()
+        self.destroy()
 
     def _validate_notes(self, event=None):
         note_content = self.notes_textbox.get("1.0", "end").strip()
