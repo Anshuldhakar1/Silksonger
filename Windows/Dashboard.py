@@ -342,8 +342,11 @@ class DashboardWindow(ctk.CTk):
                                        font=small_font, text_color="gray",
                                        anchor="w")
         timestamp_label.place(x=0, y=0) 
-
-        main_label = ctk.CTkLabel(text_frame, text=main_text,
+        text = main_text
+        limit = 33
+        if len(text) > limit-4:
+            text = main_text[:limit] + " ..."
+        main_label = ctk.CTkLabel(text_frame, text=text,
                                   font=main_font, text_color="black",
                                   anchor="w")
         main_label.place(x=0, y=18) 

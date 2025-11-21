@@ -18,6 +18,25 @@ def get_scene_key(item: dict) -> str:
 def get_name_key(item: dict) -> str:
     return item.get("Name", "Unknown")
 
+def diff_simple_list(path: str, old_list: List[Any], new_list: List[Any]) -> List[Tuple]:
+    """Diffs a simple list of hashable items (strings/ints) to find additions/removals."""
+    diffs = []
+    old_set = set(old_list)
+    new_set = set(new_list)
+    
+    # Find added items (preserving order from new_list)
+    added = [x for x in new_list if x not in old_set]
+    
+    # Find removed items (preserving order from old_list)
+    removed = [x for x in old_list if x not in new_set]
+    
+    if added:
+        diffs.append(("add", path, added))
+    if removed:
+        diffs.append(("remove", path, removed))
+        
+    return diffs
+
 def diff_keyed_list(path: str, old_list: List[Dict], new_list: List[Dict], key_func, value_key="Value") -> List[Tuple]:
     diffs = []
     old_map = {key_func(x): x for x in old_list}
@@ -58,13 +77,35 @@ def compute_save_diff(old_data: Dict, new_data: Dict) -> List[Tuple]:
     changes = []
     old_pd = old_data.get("playerData", {})
     new_pd = new_data.get("playerData", {})
-    ignored_pd_keys = {"EnemyJournalKillData", "QuestCompletionData", "ToolEquips", "Collectables"}
+    
+    # Added "scenesVisited" and "Tools" to ignore list so they are handled by custom logic below
+    ignored_pd_keys = {
+        "EnemyJournalKillData", "QuestCompletionData", "ToolEquips", "Collectables",
+        "scenesVisited", "Tools"
+    }
     
     for k, v_new in new_pd.items():
         if k in ignored_pd_keys: continue
         v_old = old_pd.get(k)
         if v_old != v_new:
             changes.append(("change", f"playerData.{k}", (v_old, v_new)))
+
+    # --- Custom List Handlers ---
+
+    # Scenes Visited (Simple List)
+    changes.extend(diff_simple_list(
+        "playerData.scenesVisited",
+        old_pd.get("scenesVisited", []),
+        new_pd.get("scenesVisited", [])
+    ))
+
+    # Tools (Keyed List)
+    changes.extend(diff_keyed_list(
+        "playerData.Tools", 
+        old_pd.get("Tools", {}).get("savedData", []),
+        new_pd.get("Tools", {}).get("savedData", []),
+        get_name_key, value_key="Data"
+    ))
 
     changes.extend(diff_keyed_list(
         "Journal", 
@@ -136,22 +177,16 @@ def expanded_format(data, indent: int = 0) -> str:
         return repr(data)
 
 def render_diff_view(scroll_frame: ctk.CTkScrollableFrame, diff_data: List, asset_manager):
-    """
-    Centralized logic to render the diff list into a scrollable frame.
-    """
-    # Fonts & Icons
     diff_font = ctk.CTkFont(family="Roboto Mono", size=13, weight="normal")
     diff_font_bold = ctk.CTkFont(family="Roboto Mono", size=13, weight="bold")
     icon_arrow = asset_manager.get_icon("arrow_right")
 
     def create_change_row(index, path, del_content, add_content, operation, suffix_title=""):
         bg_color = "#f7f7f7" if index % 2 == 0 else "#fcfcfc"
-        
         change_frame = ctk.CTkFrame(scroll_frame, fg_color=bg_color)
         change_frame.pack(padx=15, pady=5, fill="x", expand=True)
         change_frame.grid_columnconfigure(0, weight=1)
 
-        # Title
         title_frame = ctk.CTkFrame(change_frame, fg_color="transparent")
         title_frame.grid(row=0, column=0, padx=5, pady=0, sticky="ew")
 
@@ -168,29 +203,18 @@ def render_diff_view(scroll_frame: ctk.CTkScrollableFrame, diff_data: List, asse
         )
         title_label.grid(row=0, column=1, padx=(3, 0), sticky="w")
 
-        # Values
         values_frame = ctk.CTkFrame(change_frame, fg_color="transparent")
         values_frame.grid(row=1, column=0, padx=0, pady=0, sticky="ew")
 
-        # --- Deletion Rendering (FIXED) ---
         if del_content is not None:
             values_frame.grid_columnconfigure(0, weight=0)
             del_frame = ctk.CTkFrame(values_frame, fg_color="#fdecec", border_width=2, border_color="#656565")
             del_frame.grid(row=0, column=0, padx=5, pady=0, sticky="w")
             
-            # FIX: Use expanded_format here too!
             fmt_del = expanded_format(del_content)
-            lbl = ctk.CTkLabel(
-                del_frame, 
-                text=f"{fmt_del} ", 
-                text_color="#b81818", 
-                font=diff_font,
-                justify="left", # Ensure multiline dicts align left
-                anchor="w"
-            )
+            lbl = ctk.CTkLabel(del_frame, text=f"{fmt_del} ", text_color="#b81818", font=diff_font, justify="left", anchor="w")
             lbl.pack(padx=5, pady=2)
 
-        # --- Addition Rendering ---
         if add_content is not None:
             col = 1 if del_content is not None else 0
             values_frame.grid_columnconfigure(col, weight=0)
@@ -198,21 +222,12 @@ def render_diff_view(scroll_frame: ctk.CTkScrollableFrame, diff_data: List, asse
             add_frame.grid(row=0, column=col, padx=5, pady=0, sticky="w")
             
             fmt_add = expanded_format(add_content)
-            lbl = ctk.CTkLabel(
-                add_frame, 
-                text=f" {fmt_add}", 
-                text_color="#117e3a", 
-                font=diff_font, 
-                justify="left", 
-                anchor="w"
-            )
+            lbl = ctk.CTkLabel(add_frame, text=f" {fmt_add}", text_color="#117e3a", font=diff_font, justify="left", anchor="w")
             lbl.pack(padx=(5,8), pady=2)
 
-    # Clear existing content
     for widget in scroll_frame.winfo_children():
         widget.destroy()
 
-    # Populate
     for i, item in enumerate(diff_data):
         operation, path, values = item
         
